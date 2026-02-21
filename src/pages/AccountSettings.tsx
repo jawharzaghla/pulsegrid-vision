@@ -1,149 +1,178 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { updateUserName, changePassword } from "@/services/auth.service";
+import { Loader2 } from "lucide-react";
 
 const AccountSettings = () => {
-  const [password, setPassword] = useState("");
+  const { firebaseUser, profile } = useAuth();
 
-  const getStrength = (p: string) => {
-    let s = 0;
-    if (p.length >= 8) s++;
-    if (/[A-Z]/.test(p)) s++;
-    if (/[0-9]/.test(p)) s++;
-    if (/[^A-Za-z0-9]/.test(p)) s++;
-    return s;
+  // Profile
+  const [name, setName] = useState(profile?.name || firebaseUser?.displayName || "");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
+
+  // Password
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    setProfileMessage("");
+    try {
+      await updateUserName(name);
+      setProfileMessage("Profile updated successfully.");
+    } catch (err) {
+      setProfileMessage("Failed to update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
   };
-  const strength = getStrength(password);
-  const strengthColors = ["bg-destructive", "bg-destructive", "bg-warning", "bg-accent", "bg-success"];
 
-  const invoices = [
-    { date: "Feb 1, 2026", amount: "$19.00", status: "Paid" },
-    { date: "Jan 1, 2026", amount: "$19.00", status: "Paid" },
-    { date: "Dec 1, 2025", amount: "$19.00", status: "Paid" },
-  ];
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage("Passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordMessage("Password must be at least 6 characters.");
+      return;
+    }
+    setSavingPassword(true);
+    setPasswordMessage("");
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordMessage("Password changed successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      setPasswordMessage("Failed to change password. Check your current password.");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const tier = profile?.tier || "free";
 
   return (
-    <div className="p-8 max-w-5xl">
-      <h1 className="text-2xl font-bold mb-8">Account & Billing</h1>
+    <div className="p-8 max-w-2xl">
+      <h1 className="text-2xl font-bold mb-8">Account Settings</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left - Account */}
-        <div className="space-y-6">
-          <div className="glass rounded-xl p-6 card-shadow">
-            <h3 className="font-semibold mb-4">Profile</h3>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center text-xl font-bold text-primary-foreground cursor-pointer hover:opacity-80 transition-opacity">
-                JD
-              </div>
-              <div>
-                <p className="font-medium">Jane Doe</p>
-                <p className="text-xs text-muted-foreground">Click avatar to upload</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-micro block mb-2">NAME</label>
-                <input defaultValue="Jane Doe" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
-              </div>
-              <div>
-                <label className="text-micro block mb-2">EMAIL</label>
-                <input defaultValue="jane@company.com" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
-              </div>
-              <button className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all">Save Profile</button>
-            </div>
+      <div className="space-y-8">
+        {/* Profile Section */}
+        <section className="glass rounded-xl p-6 card-shadow space-y-4">
+          <h2 className="font-semibold mb-2">Profile</h2>
+          <div>
+            <label className="text-micro block mb-2">FULL NAME</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            />
           </div>
-
-          <div className="glass rounded-xl p-6 card-shadow">
-            <h3 className="font-semibold mb-4">Password</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-micro block mb-2">CURRENT PASSWORD</label>
-                <input type="password" placeholder="••••••••" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
-              </div>
-              <div>
-                <label className="text-micro block mb-2">NEW PASSWORD</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
-                {password && (
-                  <div className="flex gap-1 mt-2">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < strength ? strengthColors[strength] : "bg-muted"}`} />
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="text-micro block mb-2">CONFIRM PASSWORD</label>
-                <input type="password" placeholder="••••••••" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
-              </div>
-              <button className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all">Update Password</button>
-            </div>
+          <div>
+            <label className="text-micro block mb-2">EMAIL</label>
+            <input
+              value={firebaseUser?.email || ""}
+              disabled
+              className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-lg text-body text-muted-foreground cursor-not-allowed"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed.</p>
           </div>
-        </div>
+          {profileMessage && (
+            <p className={`text-sm ${profileMessage.includes("success") ? "text-success" : "text-destructive"}`}>
+              {profileMessage}
+            </p>
+          )}
+          <button
+            onClick={handleSaveProfile}
+            disabled={savingProfile}
+            className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {savingProfile && <Loader2 size={14} className="animate-spin" />}
+            {savingProfile ? "Saving..." : "Save Profile"}
+          </button>
+        </section>
 
-        {/* Right - Billing */}
-        <div className="space-y-6">
-          <div className="glass rounded-xl p-6 card-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Current Plan</h3>
-              <span className="px-3 py-1 bg-primary/20 text-primary text-xs font-semibold rounded-full">Pro</span>
+        {/* Password Section */}
+        <section className="glass rounded-xl p-6 card-shadow space-y-4">
+          <h2 className="font-semibold mb-2">Change Password</h2>
+          <div>
+            <label className="text-micro block mb-2">CURRENT PASSWORD</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-micro block mb-2">NEW PASSWORD</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
             </div>
-            <p className="text-body text-muted-foreground mb-6">Next billing: March 1, 2026</p>
-
-            <div className="space-y-4">
-              {[
-                { label: "Projects", used: 7, total: 10 },
-                { label: "Widgets", used: 63, total: 250 },
-                { label: "AI Analyses Today", used: 12, total: 100 },
-              ].map((stat, i) => (
-                <div key={i}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">{stat.label}</span>
-                    <span className="font-medium">{stat.used}/{stat.total}</span>
-                  </div>
-                  <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
-                    <div className="h-full gradient-primary rounded-full" style={{ width: `${(stat.used / stat.total) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
+            <div>
+              <label className="text-micro block mb-2">CONFIRM PASSWORD</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
             </div>
           </div>
+          {passwordMessage && (
+            <p className={`text-sm ${passwordMessage.includes("success") ? "text-success" : "text-destructive"}`}>
+              {passwordMessage}
+            </p>
+          )}
+          <button
+            onClick={handleChangePassword}
+            disabled={savingPassword || !currentPassword || !newPassword}
+            className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {savingPassword && <Loader2 size={14} className="animate-spin" />}
+            {savingPassword ? "Changing..." : "Change Password"}
+          </button>
+        </section>
 
-          {/* Upgrade card */}
-          <div className="gradient-border rounded-xl p-6 bg-card card-shadow">
-            <h3 className="font-semibold mb-2">Upgrade to Business</h3>
-            <p className="text-body text-muted-foreground mb-4">Unlimited everything. Priority support. SSO & team roles.</p>
-            <button className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all">
-              Upgrade — $49/mo
-            </button>
+        {/* Billing Section */}
+        <section className="glass rounded-xl p-6 card-shadow space-y-4">
+          <h2 className="font-semibold mb-2">Billing & Plan</h2>
+          <div className="flex items-center gap-3">
+            <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${tier === "free" ? "bg-muted text-muted-foreground" :
+                tier === "pro" ? "bg-primary/20 text-primary" :
+                  "bg-accent/20 text-accent"
+              }`}>
+              {tier}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {tier === "free" ? "2 projects, 5 widgets each" :
+                tier === "pro" ? "10 projects, 25 widgets each" :
+                  "Unlimited projects & widgets"}
+            </span>
           </div>
-
-          {/* Invoices */}
-          <div className="glass rounded-xl p-6 card-shadow">
-            <h3 className="font-semibold mb-4">Invoices</h3>
-            <table className="w-full text-body">
-              <thead>
-                <tr className="text-micro text-left">
-                  <th className="pb-2">DATE</th>
-                  <th className="pb-2">AMOUNT</th>
-                  <th className="pb-2">STATUS</th>
-                  <th className="pb-2 text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((inv, i) => (
-                  <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                    <td className="py-2 px-1 rounded-l-md">{inv.date}</td>
-                    <td className="py-2">{inv.amount}</td>
-                    <td className="py-2">
-                      <span className="px-2 py-0.5 bg-success/20 text-success text-xs rounded-full">{inv.status}</span>
-                    </td>
-                    <td className="py-2 px-1 text-right rounded-r-md">
-                      <a href="#" className="text-primary text-xs hover:underline">Download</a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          {tier === "free" && (
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <p className="text-sm font-medium mb-1">Upgrade to Pro</p>
+              <p className="text-xs text-muted-foreground mb-3">Unlock more projects, AI analyses, and faster refresh rates.</p>
+              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                Upgrade Plan
+              </button>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

@@ -1,9 +1,17 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import PulseGridLogo from "@/components/PulseGridLogo";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Signup = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const { handleSignUp, error, clearError } = useAuth();
+  const navigate = useNavigate();
 
   const getStrength = (p: string) => {
     let s = 0;
@@ -16,6 +24,23 @@ const Signup = () => {
 
   const strength = getStrength(password);
   const strengthColors = ["bg-destructive", "bg-destructive", "bg-warning", "bg-accent", "bg-success"];
+  const passwordsMatch = confirmPassword === "" || password === confirmPassword;
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password || !confirmPassword) return;
+    if (password !== confirmPassword) return;
+    if (!agreed) return;
+    try {
+      setSubmitting(true);
+      await handleSignUp(email, password, name);
+      navigate("/app/projects", { replace: true });
+    } catch {
+      // Error is already set in AuthContext
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -28,18 +53,46 @@ const Signup = () => {
           <h1 className="text-2xl font-bold mb-2">Create your account</h1>
           <p className="text-muted-foreground text-body mb-8">Start building your command center.</p>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {error && (
+            <div className="mb-4 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+              {error}
+              <button onClick={clearError} className="float-right text-destructive/60 hover:text-destructive">✕</button>
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={onSubmit}>
             <div>
               <label className="text-micro block mb-2">FULL NAME</label>
-              <input type="text" placeholder="Jane Doe" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+              <input
+                type="text"
+                placeholder="Jane Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
             </div>
             <div>
               <label className="text-micro block mb-2">EMAIL</label>
-              <input type="email" placeholder="you@company.com" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+              <input
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
             </div>
             <div>
               <label className="text-micro block mb-2">PASSWORD</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
               {password && (
                 <div className="flex gap-1 mt-2">
                   {[0, 1, 2, 3].map((i) => (
@@ -50,16 +103,36 @@ const Signup = () => {
             </div>
             <div>
               <label className="text-micro block mb-2">CONFIRM PASSWORD</label>
-              <input type="password" placeholder="••••••••" className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className={`w-full px-4 py-2.5 bg-muted/50 border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${!passwordsMatch ? "border-destructive" : "border-border"
+                  }`}
+              />
+              {!passwordsMatch && (
+                <p className="text-xs text-destructive mt-1">Passwords do not match</p>
+              )}
             </div>
 
-            <label className="flex items-center gap-2 text-body text-muted-foreground">
-              <input type="checkbox" className="rounded border-border bg-muted" />
+            <label className="flex items-center gap-2 text-body text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="rounded border-border bg-muted accent-primary"
+              />
               I agree to the Terms of Service
             </label>
 
-            <button type="submit" className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all">
-              Create Account
+            <button
+              type="submit"
+              disabled={submitting || !agreed || !passwordsMatch || !password}
+              className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Creating account..." : "Create Account"}
             </button>
           </form>
 

@@ -1,128 +1,211 @@
-import { useState } from "react";
-import { X, Sparkles, RefreshCw, Copy, AlertTriangle, Send } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { X, Sparkles, Send, RefreshCw, Copy, Loader2, FileText, MessageSquare, Brain, Sun } from "lucide-react";
+import { analyzeWithAI, generateLocalAnalysis, buildAnalysisRequest, AIError } from "@/services/groq.service";
+import type { AnalysisMode, CleanedMetricPayload } from "@/types/models";
 
-const tabs = ["Project Brief", "Widget Analysis", "Ask a Question", "Daily Brief"];
+interface AIPanelProps {
+  projectId: string;
+  widgetPayloads: CleanedMetricPayload[];
+  onClose: () => void;
+}
 
-const mockChat = [
-  { role: "user" as const, text: "What's driving our revenue growth this month?" },
-  { role: "ai" as const, text: "Your revenue growth of 12.4% this month is primarily driven by a 22.7% increase in API Add-on purchases and a 14.2% uplift in Pro Plan subscriptions. Organic traffic is your strongest channel, contributing 35% of new conversions." },
-  { role: "user" as const, text: "Any concerns I should watch for?" },
-  { role: "ai" as const, text: "I've detected a churn spike in Week 11 — a 0.8% increase above your 90-day average. This correlates with a pricing page change deployed on March 14. I'd recommend running a cohort analysis on users who viewed the pricing page that week." },
+interface ChatMessage {
+  role: "user" | "ai";
+  content: string;
+}
+
+const tabs: { mode: AnalysisMode; label: string; icon: React.ReactNode }[] = [
+  { mode: "project-brief", label: "Project Brief", icon: <FileText size={14} /> },
+  { mode: "widget", label: "Widget Analysis", icon: <Brain size={14} /> },
+  { mode: "ask", label: "Ask a Question", icon: <MessageSquare size={14} /> },
+  { mode: "daily-brief", label: "Daily Brief", icon: <Sun size={14} /> },
 ];
 
-const AIPanel = ({ onClose }: { onClose: () => void }) => {
-  const [activeTab, setActiveTab] = useState(0);
+const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
+  const [activeTab, setActiveTab] = useState<AnalysisMode>("project-brief");
+  const [analysisContent, setAnalysisContent] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [question, setQuestion] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const handleAnalyze = async (mode: AnalysisMode) => {
+    setLoading((prev) => ({ ...prev, [mode]: true }));
+    setError(null);
+    try {
+      const request = buildAnalysisRequest(projectId, mode, widgetPayloads);
+      const response = await analyzeWithAI(request);
+      setAnalysisContent((prev) => ({ ...prev, [mode]: response.content }));
+    } catch (err) {
+      if (err instanceof AIError && err.code === 'RATE_LIMITED') {
+        setError(err.message);
+      } else {
+        // Fallback to local analysis
+        const fallback = generateLocalAnalysis(mode, widgetPayloads);
+        setAnalysisContent((prev) => ({ ...prev, [mode]: fallback }));
+      }
+    } finally {
+      setLoading((prev) => ({ ...prev, [mode]: false }));
+    }
+  };
+
+  const handleAsk = async () => {
+    if (!question.trim()) return;
+    const q = question.trim();
+    setQuestion("");
+    setChatMessages((prev) => [...prev, { role: "user", content: q }]);
+
+    try {
+      const request = buildAnalysisRequest(projectId, "ask", widgetPayloads, q);
+      const response = await analyzeWithAI(request);
+      setChatMessages((prev) => [...prev, { role: "ai", content: response.content }]);
+    } catch {
+      const fallback = generateLocalAnalysis("ask", widgetPayloads, q);
+      setChatMessages((prev) => [...prev, { role: "ai", content: fallback }]);
+    }
+  };
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+  };
+
+  const currentContent = analysisContent[activeTab];
+  const isLoading = loading[activeTab];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-background/40 backdrop-blur-sm" />
-      <div className="relative w-[500px] h-full glass-strong border-l border-border/50 animate-slide-in-right overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-accent" />
-              <h2 className="text-xl font-bold">AI Analysis</h2>
-            </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={20} /></button>
+    <div className="fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-lg bg-card border-l border-border h-full flex flex-col animate-slide-in-right" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles size={18} className="text-accent" />
+            <h2 className="text-lg font-bold">AI Analysis</h2>
           </div>
-          <p className="text-xs text-muted-foreground mb-6">Generated just now</p>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X size={20} />
+          </button>
+        </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 mb-6 bg-muted/30 rounded-lg p-1">
-            {tabs.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveTab(i)}
-                className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  i === activeTab ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
+        {/* Tabs */}
+        <div className="px-4 pt-3 flex gap-1 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.mode}
+              onClick={() => setActiveTab(tab.mode)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${activeTab === tab.mode
+                  ? "bg-accent/10 text-accent border border-accent/30"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
-              >
-                {t}
-              </button>
-            ))}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="mx-4 mt-3 px-4 py-3 bg-warning/10 border border-warning/30 rounded-lg text-xs text-warning">
+            {error}
           </div>
+        )}
 
-          {/* Project Brief */}
-          {activeTab === 0 && (
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === "ask" ? (
+            /* Chat interface */
             <div className="space-y-4">
-              <p className="text-body leading-relaxed">
-                <strong>Overall:</strong> Your SaaS metrics show strong momentum this period. Revenue is up 12.4% MoM to $48,290, with MRR growth accelerating. User acquisition is healthy at 1,204 active users, though there are early signs of elevated churn worth monitoring.
-              </p>
-
-              {/* Collapsible sections */}
-              {[
-                { title: "Revenue Insights", color: "border-l-success", content: "Subscription revenue grew 14.2% driven by Pro Plan upgrades. One-time purchases declined 3.1%. Consider promoting annual plans to stabilize recurring revenue. API Add-on is your fastest growing segment at +22.7%." },
-                { title: "User Growth", color: "border-l-info", content: "Net new users increased 8.1% MoM. Organic remains your strongest channel at 35% of signups. Paid acquisition CPA decreased 12% — consider increasing budget allocation. Referral program shows early promise with 15% of new users." },
-                { title: "Anomalies Detected", color: "border-l-warning", content: "Churn spiked 0.8% above average in Week 11, correlating with a pricing page redesign deployed March 14. Recommend cohort analysis on affected users.", isAnomaly: true },
-              ].map((section, i) => (
-                <div key={i} className={`border-l-2 ${section.color} pl-4 py-2`}>
-                  <h4 className="font-semibold text-sm mb-2">{section.title}</h4>
-                  {section.isAnomaly && (
-                    <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-warning/10 border border-warning/20 rounded-md w-fit">
-                      <AlertTriangle size={12} className="text-warning" />
-                      <span className="text-xs text-warning font-medium">Churn spike detected Week 11</span>
-                    </div>
-                  )}
-                  <p className="text-body text-muted-foreground leading-relaxed">{section.content}</p>
+              {chatMessages.length === 0 && (
+                <div className="text-center py-12">
+                  <MessageSquare size={32} className="text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">Ask anything about your data.</p>
+                  <p className="text-xs text-muted-foreground mt-1">e.g., "Why did revenue drop this month?"</p>
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-muted/50 text-foreground rounded-bl-md border border-border"
+                    }`}>
+                    {msg.content}
+                  </div>
                 </div>
               ))}
-
-              <div className="flex gap-3 pt-4">
-                <button className="px-4 py-2 border border-border hover:border-primary/50 rounded-lg text-body text-muted-foreground hover:text-foreground transition-all flex items-center gap-2">
-                  <RefreshCw size={14} /> Regenerate
-                </button>
-                <button className="px-4 py-2 border border-border hover:border-primary/50 rounded-lg text-body text-muted-foreground hover:text-foreground transition-all flex items-center gap-2">
-                  <Copy size={14} /> Copy Report
-                </button>
-              </div>
+              <div ref={chatEndRef} />
             </div>
-          )}
+          ) : (
+            /* Analysis content */
+            <div>
+              {!currentContent && !isLoading && (
+                <div className="text-center py-12">
+                  <Brain size={32} className="text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground mb-4">Generate an AI analysis of your data.</p>
+                  <button
+                    onClick={() => handleAnalyze(activeTab)}
+                    className="px-4 py-2 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent rounded-lg text-sm font-medium transition-all flex items-center gap-2 mx-auto"
+                  >
+                    <Sparkles size={14} /> Generate {tabs.find((t) => t.mode === activeTab)?.label}
+                  </button>
+                </div>
+              )}
 
-          {/* Ask a Question */}
-          {activeTab === 2 && (
-            <div className="flex flex-col h-[calc(100vh-220px)]">
-              <div className="flex-1 space-y-4 overflow-y-auto mb-4">
-                {mockChat.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-body leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted/50 border border-border rounded-bl-md"
-                    }`}>
-                      {msg.text}
-                    </div>
+              {isLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="text-accent animate-spin" />
+                  <p className="text-sm text-muted-foreground ml-3">Analyzing your data...</p>
+                </div>
+              )}
+
+              {currentContent && !isLoading && (
+                <div>
+                  <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">{currentContent}</div>
+                  <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border">
+                    <button
+                      onClick={() => handleAnalyze(activeTab)}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <RefreshCw size={12} /> Regenerate
+                    </button>
+                    <button
+                      onClick={() => handleCopy(currentContent)}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Copy size={12} /> Copy
+                    </button>
                   </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  placeholder="Ask anything about your data..."
-                  className="flex-1 px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-                <button className="w-10 h-10 bg-accent hover:bg-accent/90 text-accent-foreground rounded-lg flex items-center justify-center transition-all">
-                  <Send size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Widget Analysis placeholder */}
-          {activeTab === 1 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Sparkles size={32} className="mx-auto mb-4 text-accent/40" />
-              <p className="text-body">Select a widget on your dashboard to get AI-powered insights about that specific data source.</p>
-            </div>
-          )}
-
-          {/* Daily Brief placeholder */}
-          {activeTab === 3 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Sparkles size={32} className="mx-auto mb-4 text-accent/40" />
-              <p className="text-body">Your daily brief will be ready at 9:00 AM tomorrow. It summarizes overnight changes and key metrics.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Chat input (only for Ask tab) */}
+        {activeTab === "ask" && (
+          <div className="p-4 border-t border-border">
+            <div className="flex items-center gap-2">
+              <input
+                placeholder="Ask about your data..."
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+                className="flex-1 px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all"
+              />
+              <button
+                onClick={handleAsk}
+                disabled={!question.trim()}
+                className="w-10 h-10 bg-accent text-accent-foreground rounded-lg flex items-center justify-center transition-all hover:bg-accent/90 disabled:opacity-50"
+              >
+                <Send size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

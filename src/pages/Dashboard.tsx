@@ -1,80 +1,111 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, forwardRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Settings, FileDown, Sparkles, MoreHorizontal, Plus, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Settings, FileDown, Sparkles, MoreHorizontal, Plus, RefreshCw, Loader2, AlertTriangle, Trash2, Edit3 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
+import type { Layout } from "react-grid-layout";
 import AddWidgetDrawer from "@/components/dashboard/AddWidgetDrawer";
 import AIPanel from "@/components/dashboard/AIPanel";
-import { getProject } from "@/services/firestore.service";
+import { getProject, saveLayout, deleteWidget } from "@/services/firestore.service";
 import { fetchAllWidgetData } from "@/services/api-fetch.service";
-import type { Project, Widget, CleanedMetricPayload, WidgetError } from "@/types/models";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Project, Widget, CleanedMetricPayload, WidgetError, LayoutItem } from "@/types/models";
 
-const COLORS = ["hsl(270,61%,47%)", "hsl(270,50%,55%)", "hsl(200,80%,50%)", "hsl(170,100%,39%)"];
-const sparkline = [12, 15, 13, 18, 16, 20, 22, 19, 24, 21, 25, 28];
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 
-// Static demo data for projects without widgets yet
-const demoKPIs = [
-  { title: "MONTHLY REVENUE", value: "$48,290", change: "↑ +12.4%", positive: true },
-  { title: "ACTIVE USERS", value: "1,204", change: "↑ +8.1%", positive: true },
-  { title: "CHURN RATE", value: "2.3%", change: "↓ -0.4%", positive: true },
-  { title: "MRR GROWTH", value: "$3,840", change: "↑ +5.2%", positive: true },
-];
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const demoRevenueData = [
-  { month: "Jan", value: 32000 }, { month: "Feb", value: 35000 }, { month: "Mar", value: 33000 },
-  { month: "Apr", value: 38000 }, { month: "May", value: 42000 }, { month: "Jun", value: 40000 },
-  { month: "Jul", value: 45000 }, { month: "Aug", value: 43000 }, { month: "Sep", value: 47000 },
-  { month: "Oct", value: 44000 }, { month: "Nov", value: 46000 }, { month: "Dec", value: 48290 },
-];
+interface WidgetActionProps {
+  onEdit: () => void;
+  onDelete: () => void;
+}
 
-const demoUsersData = [
-  { source: "Organic", value: 420 }, { source: "Paid", value: 310 },
-  { source: "Referral", value: 180 }, { source: "Direct", value: 150 },
-  { source: "Social", value: 94 }, { source: "Email", value: 50 },
-];
-
-const demoRevenueBreakdown = [
-  { name: "Subscriptions", value: 60 }, { name: "One-time", value: 20 },
-  { name: "Add-ons", value: 12 }, { name: "Enterprise", value: 8 },
-];
-
-const demoTopProducts = [
-  { name: "Pro Plan", revenue: "$18,420", growth: "+14.2%" },
-  { name: "Business Plan", revenue: "$12,300", growth: "+8.1%" },
-  { name: "API Add-on", revenue: "$8,940", growth: "+22.7%" },
-  { name: "Storage Pack", revenue: "$5,210", growth: "+5.3%" },
-  { name: "Support Tier", revenue: "$3,420", growth: "+11.0%" },
-];
-
-const KPICard = ({ title, value, change, positive }: { title: string; value: string; change: string; positive: boolean }) => (
-  <div className="glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40">
-    <div className="flex items-center justify-between mb-1">
-      <p className="text-micro">{title}</p>
-      <MoreHorizontal size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-    </div>
-    <p className="text-3xl font-bold mb-2">{value}</p>
-    <div className="flex items-center justify-between">
-      <span className={`text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>{change} vs last month</span>
-      <div className="flex items-end gap-[2px] h-4">
-        {sparkline.map((v, i) => (
-          <div key={i} className="w-[3px] bg-primary/40 rounded-t-sm" style={{ height: `${(v / 28) * 100}%` }} />
-        ))}
-      </div>
-    </div>
-  </div>
+const WidgetActions = ({ onEdit, onDelete }: WidgetActionProps) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="p-1 hover:bg-muted rounded-md transition-colors">
+        <MoreHorizontal size={14} className="text-muted-foreground" />
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-40 glass border-border shadow-xl">
+      <DropdownMenuItem onClick={onEdit} className="gap-2 cursor-pointer">
+        <Edit3 size={14} />
+        <span>Edit Widget</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={onDelete} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+        <Trash2 size={14} />
+        <span>Delete Widget</span>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
 );
 
-const WidgetErrorCard = ({ error }: { error: WidgetError }) => (
-  <div className="glass rounded-xl p-5 card-shadow border-destructive/30 border">
-    <div className="flex items-center gap-2 mb-2">
-      <AlertTriangle size={16} className="text-destructive" />
-      <p className="text-sm font-medium text-destructive">Widget Error</p>
+interface KPICardProps {
+  title: string;
+  value: string;
+  change: string;
+  positive: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const KPICard = forwardRef<HTMLDivElement, KPICardProps & React.HTMLAttributes<HTMLDivElement>>(
+  ({ title, value, change, positive, onEdit, onDelete, style, className, onMouseDown, onMouseUp, onTouchEnd, ...props }, ref) => (
+    <div
+      ref={ref}
+      style={style}
+      className={`${className} glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40 flex flex-col`}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      onTouchEnd={onTouchEnd}
+      {...props}
+    >
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-micro">{title}</p>
+        <WidgetActions onEdit={onEdit} onDelete={onDelete} />
+      </div>
+      <div className="flex-1 flex flex-col justify-center">
+        <p className="text-3xl font-bold mb-2">{value}</p>
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>{change} vs last month</span>
+        </div>
+      </div>
     </div>
-    <p className="text-xs text-muted-foreground">{error.message}</p>
-  </div>
+  )
+);
+
+const WidgetErrorCard = forwardRef<HTMLDivElement, { error: WidgetError; onEdit: () => void; onDelete: () => void } & React.HTMLAttributes<HTMLDivElement>>(
+  ({ error, onEdit, onDelete, style, className, onMouseDown, onMouseUp, onTouchEnd, ...props }, ref) => (
+    <div
+      ref={ref}
+      style={style}
+      className={`${className} glass rounded-xl p-5 card-shadow border-destructive/30 border flex flex-col`}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      onTouchEnd={onTouchEnd}
+      {...props}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={16} className="text-destructive" />
+          <p className="text-sm font-medium text-destructive">Widget Error</p>
+        </div>
+        <WidgetActions onEdit={onEdit} onDelete={onDelete} />
+      </div>
+      <p className="text-xs text-muted-foreground flex-1 overflow-auto">{error.message}</p>
+    </div>
+  )
 );
 
 const Dashboard = () => {
   const { id } = useParams();
+  const { cryptoKey } = useAuth();
   const [showDrawer, setShowDrawer] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
@@ -82,6 +113,10 @@ const Dashboard = () => {
   const [widgetData, setWidgetData] = useState<Map<string, CleanedMetricPayload | WidgetError>>(new Map());
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
+  const [currentLayout, setCurrentLayout] = useState<Layout[]>([]);
+
+  const { width, containerRef, mounted } = useContainerWidth();
 
   const loadProject = useCallback(async () => {
     if (!id) return;
@@ -92,8 +127,17 @@ const Dashboard = () => {
 
       // Fetch widget data if any widgets exist
       if (proj && proj.widgets.length > 0) {
-        const data = await fetchAllWidgetData(proj.widgets, null);
+        const data = await fetchAllWidgetData(proj.widgets, cryptoKey);
         setWidgetData(data);
+
+        // Map initial layout or use stored layout
+        const initialLayout: Layout[] = proj.widgets.map((w, i) => {
+          const stored = proj.layout.find((l) => l.widgetId === w.id);
+          if (stored) return { i: w.id, ...stored };
+          // Default layout: 3x2 grid items
+          return { i: w.id, x: (i % 4) * 3, y: Math.floor(i / 4) * 2, w: 3, h: 2 };
+        });
+        setCurrentLayout(initialLayout);
       }
       setLastRefreshed(new Date());
     } catch (err) {
@@ -101,7 +145,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, cryptoKey]);
 
   useEffect(() => {
     loadProject();
@@ -112,7 +156,7 @@ const Dashboard = () => {
     setRefreshing(true);
     try {
       if (project.widgets.length > 0) {
-        const data = await fetchAllWidgetData(project.widgets, null);
+        const data = await fetchAllWidgetData(project.widgets, cryptoKey);
         setWidgetData(data);
       }
       setLastRefreshed(new Date());
@@ -123,7 +167,43 @@ const Dashboard = () => {
 
   const onWidgetAdded = () => {
     setShowDrawer(false);
+    setEditingWidget(null);
     loadProject();
+  };
+
+  const handleEditWidget = (widget: Widget) => {
+    setEditingWidget(widget);
+    setShowDrawer(true);
+  };
+
+  const handleDeleteWidget = async (widgetId: string) => {
+    if (!id || !window.confirm("Are you sure you want to delete this widget?")) return;
+    try {
+      await deleteWidget(id, widgetId);
+      loadProject();
+    } catch (err) {
+      console.error("Failed to delete widget:", err);
+    }
+  };
+
+  const onLayoutChange = async (layout: Layout[]) => {
+    if (!id || !project) return;
+    setCurrentLayout(layout);
+
+    // Save to Firestore
+    const layoutItems: LayoutItem[] = layout.map((l) => ({
+      widgetId: l.i,
+      x: l.x,
+      y: l.y,
+      w: l.w,
+      h: l.h,
+    }));
+
+    try {
+      await saveLayout(id, layoutItems);
+    } catch (err) {
+      console.error("Failed to save layout:", err);
+    }
   };
 
   const timeAgo = () => {
@@ -187,158 +267,67 @@ const Dashboard = () => {
 
       {/* Show demo data when no widgets, or live data when widgets exist */}
       {!hasWidgets ? (
-        <>
-          {/* Demo dashboard with static data */}
-          <div className="grid grid-cols-12 gap-4">
-            {demoKPIs.map((kpi, i) => (
-              <div key={i} className="col-span-3"><KPICard {...kpi} /></div>
-            ))}
-
-            <div className="col-span-6 glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-micro">REVENUE OVER TIME</p>
-                <MoreHorizontal size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <ResponsiveContainer width="100%" height={240}>
-                <AreaChart data={demoRevenueData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(270,61%,47%)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(170,100%,39%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(240,25%,22%)" />
-                  <XAxis dataKey="month" stroke="hsl(220,9%,46%)" fontSize={11} />
-                  <YAxis stroke="hsl(220,9%,46%)" fontSize={11} tickFormatter={(v) => `$${v / 1000}K`} />
-                  <Tooltip contentStyle={{ background: "hsl(240,27%,14%)", border: "1px solid hsl(240,25%,22%)", borderRadius: "8px", fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="value" stroke="hsl(270,61%,47%)" strokeWidth={2} fill="url(#colorRevenue)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="col-span-6 glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-micro">USERS BY SOURCE</p>
-                <MoreHorizontal size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={demoUsersData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(240,25%,22%)" />
-                  <XAxis dataKey="source" stroke="hsl(220,9%,46%)" fontSize={11} />
-                  <YAxis stroke="hsl(220,9%,46%)" fontSize={11} />
-                  <Tooltip contentStyle={{ background: "hsl(240,27%,14%)", border: "1px solid hsl(240,25%,22%)", borderRadius: "8px", fontSize: "12px" }} />
-                  <Bar dataKey="value" fill="hsl(270,61%,47%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="col-span-4 glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-micro">REVENUE SPLIT</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <ResponsiveContainer width={140} height={140}>
-                  <PieChart>
-                    <Pie data={demoRevenueBreakdown} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
-                      {demoRevenueBreakdown.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="space-y-2">
-                  {demoRevenueBreakdown.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-body">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i] }} />
-                      <span className="text-muted-foreground">{item.name}</span>
-                      <span className="font-medium ml-auto">{item.value}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="col-span-4 glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-micro">TOP 5 PRODUCTS</p>
-              </div>
-              <table className="w-full text-body">
-                <thead>
-                  <tr className="text-micro text-left">
-                    <th className="pb-2">NAME</th>
-                    <th className="pb-2">REVENUE</th>
-                    <th className="pb-2 text-right">GROWTH</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {demoTopProducts.map((p, i) => (
-                    <tr key={i} className={`${i % 2 === 0 ? "bg-muted/20" : ""}`}>
-                      <td className="py-2 px-1 rounded-l-md">{p.name}</td>
-                      <td className="py-2">{p.revenue}</td>
-                      <td className="py-2 px-1 text-right text-success rounded-r-md">{p.growth}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="col-span-4 glass rounded-xl p-5 card-shadow group transition-all hover:border-primary/40">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-micro">CONVERSION FUNNEL</p>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { label: "Visitors", value: 12400, pct: 100 },
-                  { label: "Signups", value: 2480, pct: 20 },
-                  { label: "Active", value: 1204, pct: 9.7 },
-                  { label: "Paying", value: 482, pct: 3.9 },
-                ].map((step, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">{step.label}</span>
-                      <span className="font-medium">{step.value.toLocaleString()}</span>
-                    </div>
-                    <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
-                      <div className="h-full gradient-primary rounded-full transition-all" style={{ width: `${step.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
+            <Plus size={32} className="text-muted-foreground" />
           </div>
-
-          {/* Hint to add widgets */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-2">This is demo data. Add widgets to connect your own APIs.</p>
-          </div>
-        </>
+          <h2 className="text-2xl font-bold mb-3">No widgets yet</h2>
+          <p className="text-muted-foreground text-body max-w-sm mb-8">
+            Connect your favorite APIs and start visualizing your data. Your dashboard is ready for your first widget.
+          </p>
+          <button
+            onClick={() => setShowDrawer(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95"
+          >
+            <Plus size={18} /> Add Your First Widget
+          </button>
+        </div>
       ) : (
-        /* Live widget data */
-        <div className="grid grid-cols-12 gap-4">
-          {project!.widgets.map((widget) => {
-            const data = widgetData.get(widget.id);
-            const isError = data && 'code' in data;
+        /* Live grid layout */
+        <div ref={containerRef}>
+          {mounted && (
+            <ResponsiveGridLayout
+              className="layout"
+              layouts={{ lg: currentLayout }}
+              breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+              cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+              rowHeight={100}
+              width={width}
+              draggableHandle=".text-micro"
+              onLayoutChange={onLayoutChange}
+            >
+              {project!.widgets.map((widget) => {
+                const data = widgetData.get(widget.id);
+                const isError = data && 'code' in data;
 
-            if (isError) {
-              return (
-                <div key={widget.id} className="col-span-3">
-                  <WidgetErrorCard error={data as WidgetError} />
-                </div>
-              );
-            }
+                if (isError) {
+                  return (
+                    <div key={widget.id}>
+                      <WidgetErrorCard
+                        error={data as WidgetError}
+                        onEdit={() => handleEditWidget(widget)}
+                        onDelete={() => handleDeleteWidget(widget.id)}
+                      />
+                    </div>
+                  );
+                }
 
-            const payload = data as CleanedMetricPayload | undefined;
-            return (
-              <div key={widget.id} className="col-span-3">
-                <KPICard
-                  title={widget.title.toUpperCase()}
-                  value={payload ? String(payload.primaryValue) : "Loading..."}
-                  change={payload?.trend != null ? `${payload.trend > 0 ? "↑" : "↓"} ${payload.trend}%` : "—"}
-                  positive={(payload?.trend ?? 0) >= 0}
-                />
-              </div>
-            );
-          })}
+                const payload = data as CleanedMetricPayload | undefined;
+                return (
+                  <div key={widget.id}>
+                    <KPICard
+                      title={widget.title.toUpperCase()}
+                      value={payload ? String(payload.primaryValue) : "Loading..."}
+                      change={payload?.trend != null ? `${payload.trend > 0 ? "↑" : "↓"} ${payload.trend}%` : "—"}
+                      positive={(payload?.trend ?? 0) >= 0}
+                      onEdit={() => handleEditWidget(widget)}
+                      onDelete={() => handleDeleteWidget(widget.id)}
+                    />
+                  </div>
+                );
+              })}
+            </ResponsiveGridLayout>
+          )}
         </div>
       )}
 
@@ -351,9 +340,21 @@ const Dashboard = () => {
       </button>
 
       {/* Drawers */}
-      {showDrawer && <AddWidgetDrawer projectId={id || ""} onClose={() => setShowDrawer(false)} onWidgetAdded={onWidgetAdded} />}
+      {
+        showDrawer && (
+          <AddWidgetDrawer
+            projectId={id || ""}
+            editingWidget={editingWidget}
+            onClose={() => {
+              setShowDrawer(false);
+              setEditingWidget(null);
+            }}
+            onWidgetAdded={onWidgetAdded}
+          />
+        )
+      }
       {showAI && <AIPanel projectId={id || ""} widgetPayloads={allPayloads} onClose={() => setShowAI(false)} />}
-    </div>
+    </div >
   );
 };
 

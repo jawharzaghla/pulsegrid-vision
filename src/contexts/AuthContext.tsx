@@ -14,11 +14,13 @@ import {
     onAuthChange,
     getUserProfile,
 } from '@/services/auth.service';
+import { deriveKey, decodeSalt } from '@/services/crypto.service';
 import type { PulseGridUser } from '@/types/models';
 
 interface AuthContextType {
     firebaseUser: User | null;
     profile: PulseGridUser | null;
+    cryptoKey: CryptoKey | null;
     loading: boolean;
     error: string | null;
     handleSignIn: (email: string, password: string) => Promise<void>;
@@ -33,6 +35,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<PulseGridUser | null>(null);
+    const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setError(null);
             setLoading(true);
-            await signIn(email, password);
+            const user = await signIn(email, password);
+            const userProfile = await getUserProfile(user.uid);
+            if (userProfile?.encryptionSalt) {
+                const key = await deriveKey(password, decodeSalt(userProfile.encryptionSalt));
+                setCryptoKey(key);
+            }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Sign in failed';
             setError(formatFirebaseError(message));
@@ -73,7 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             setError(null);
             setLoading(true);
-            await signUp(email, password, name);
+            const user = await signUp(email, password, name);
+            const userProfile = await getUserProfile(user.uid);
+            if (userProfile?.encryptionSalt) {
+                const key = await deriveKey(password, decodeSalt(userProfile.encryptionSalt));
+                setCryptoKey(key);
+            }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Sign up failed';
             setError(formatFirebaseError(message));
@@ -101,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             await signOut();
             setProfile(null);
+            setCryptoKey(null);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Sign out failed';
             setError(formatFirebaseError(message));
@@ -114,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             value={{
                 firebaseUser,
                 profile,
+                cryptoKey,
                 loading,
                 error,
                 handleSignIn,

@@ -60,16 +60,22 @@ export async function createProject(
  * Get all projects for a user.
  */
 export async function getUserProjects(userId: string): Promise<Project[]> {
+    // WORKAROUND: We fetch by userId only and sort in memory 
+    // to avoid requiring a composite index for (userId == '...' && orderBy updatedAt).
     const q = query(
         collection(db, PROJECTS_COLLECTION),
-        where('userId', '==', userId),
-        orderBy('updatedAt', 'desc')
+        where('userId', '==', userId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
+    const projects = snapshot.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
     })) as Project[];
+
+    // Sort by updatedAt descending
+    return projects.sort((a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
 }
 
 /**

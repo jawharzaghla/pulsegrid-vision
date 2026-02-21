@@ -35,6 +35,10 @@ export async function signUp(
     // Set display name on Firebase Auth profile
     await updateProfile(user, { displayName: name });
 
+    // Generate encryption salt on signup
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const encryptionSalt = btoa(String.fromCharCode(...salt));
+
     // Create Firestore user profile
     const userProfile: PulseGridUser = {
         id: user.uid,
@@ -42,6 +46,7 @@ export async function signUp(
         name,
         tier: 'free',
         createdAt: new Date().toISOString(),
+        encryptionSalt,
     };
     await setDoc(doc(db, 'users', user.uid), userProfile);
 
@@ -108,7 +113,17 @@ export function onAuthChange(callback: (user: User | null) => void): Unsubscribe
 export async function getUserProfile(uid: string): Promise<PulseGridUser | null> {
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) return null;
-    return userDoc.data() as PulseGridUser;
+    const data = userDoc.data();
+
+    // Ensure all users have a salt (for legacy users)
+    if (!data.encryptionSalt) {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const encryptionSalt = btoa(String.fromCharCode(...salt));
+        await setDoc(doc(db, 'users', uid), { encryptionSalt }, { merge: true });
+        data.encryptionSalt = encryptionSalt;
+    }
+
+    return data as PulseGridUser;
 }
 
 /**

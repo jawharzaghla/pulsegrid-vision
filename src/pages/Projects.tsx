@@ -48,8 +48,12 @@ const Projects = () => {
       setLoading(true);
       const data = await getUserProjects(firebaseUser.uid);
       setProjects(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load projects:", err);
+      // Helpful hint for index errors
+      if (err?.code === "failed-precondition") {
+        console.warn("Firestore query failed! This usually means a composite index is missing. Check the console for a creation link.");
+      }
     } finally {
       setLoading(false);
     }
@@ -145,7 +149,7 @@ const Projects = () => {
             <Link
               key={project.id}
               to={`/app/projects/${project.id}`}
-              className={`group glass rounded-xl p-5 card-shadow border-l-2 ${borderColorMap[project.accentColor] || "border-l-primary"} transition-all hover:border-primary/40 hover:scale-[1.02]`}
+              className={`group glass rounded-xl p-5 card-shadow border-l-2 ${borderColorMap[project.accentColor] || "border-l-primary"} transition-all hover:border-primary/40 hover:scale-[1.02] flex flex-col h-full`}
             >
               <div className="flex items-start gap-3 mb-4">
                 <div className="text-2xl w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center">
@@ -153,11 +157,11 @@ const Projects = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{project.name}</h3>
-                  <p className="text-body text-muted-foreground truncate">{project.description || "No description"}</p>
+                  <p className="text-body text-muted-foreground line-clamp-2 mt-1">{project.description || "No description"}</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-4">
                 <span>{getTimeAgo(project.updatedAt)}</span>
                 <span className="px-2 py-0.5 bg-muted/50 rounded-full">{project.widgets.length} widgets</span>
               </div>
@@ -167,7 +171,7 @@ const Projects = () => {
           {/* Add project card */}
           <button
             onClick={() => setShowModal(true)}
-            className="border-2 border-dashed border-border rounded-xl p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-all min-h-[200px]"
+            className="border-2 border-dashed border-border rounded-xl p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-all min-h-[160px] h-full"
           >
             <Plus size={24} />
             <span className="text-body font-medium">Add a project</span>

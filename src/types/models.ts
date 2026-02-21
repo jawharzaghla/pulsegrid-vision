@@ -11,6 +11,7 @@ export interface PulseGridUser {
   tier: 'free' | 'pro' | 'business';
   createdAt: string;
   photoURL?: string;
+  encryptionSalt?: string; // Base64 encoded salt for PBKDF2
 }
 
 // --- Project ---
@@ -51,10 +52,11 @@ export interface Widget {
 }
 
 export interface DataMapping {
-  primaryValuePath: string;   // e.g. "data.revenue.total"
+  primaryValuePath: string;   // e.g. "data.revenue.total" or "__ai_extracted__"
   labelPath?: string;
   secondaryValuePath?: string;
   seriesPath?: string;
+  aiDescription?: string;     // stored for AI re-extraction on refresh
 }
 
 export type VisualizationType =
@@ -121,4 +123,42 @@ export interface WidgetError {
   code: WidgetErrorCode;
   message: string;
   widgetId: string;
+}
+
+// --- Drawer Error Types ---
+export type DrawerErrorCode =
+  | 'STEP1_URL_INVALID'
+  | 'STEP1_TIMEOUT'
+  | 'STEP1_AUTH_FAILED'
+  | 'STEP1_NOT_JSON'
+  | 'STEP2_METRIC_NOT_FOUND'
+  | 'STEP2_EXTRACTION_FAILED'
+  | 'STEP2_RATE_LIMITED'
+  | 'STEP4_SAVE_FAILED';
+
+export const DRAWER_ERROR_MESSAGES: Record<DrawerErrorCode, string> = {
+  STEP1_URL_INVALID: "URL invalide. Doit commencer par https://",
+  STEP1_TIMEOUT: "L'endpoint n'a pas répondu en 10 secondes.",
+  STEP1_AUTH_FAILED: "Accès refusé (401/403). Vérifiez vos credentials.",
+  STEP1_NOT_JSON: "La réponse n'est pas du JSON valide. PulseGrid ne supporte que les API JSON.",
+  STEP2_METRIC_NOT_FOUND: "L'IA n'a pas trouvé cette métrique. Reformulez votre description.",
+  STEP2_EXTRACTION_FAILED: "Erreur d'extraction IA. Réessayez ou vérifiez la réponse de votre API.",
+  STEP2_RATE_LIMITED: "Quota IA journalier atteint. Passez à Pro pour plus d'analyses.",
+  STEP4_SAVE_FAILED: "Impossible de sauvegarder le widget. Vérifiez l'espace disponible.",
+};
+
+// --- Visualization Compatibility ---
+export function getCompatibleVisualizations(payload: CleanedMetricPayload): VisualizationType[] {
+  const hasSeries = payload.series && payload.series.length > 0;
+  const hasPrimary = payload.primaryValue !== undefined && payload.primaryValue !== null;
+
+  const always: VisualizationType[] = hasPrimary
+    ? ['kpi-card', 'gauge', 'sparkline', 'status']
+    : [];
+
+  const seriesOnly: VisualizationType[] = hasSeries
+    ? ['line-chart', 'bar-chart', 'donut-chart', 'area-chart', 'data-table']
+    : [];
+
+  return [...always, ...seriesOnly];
 }

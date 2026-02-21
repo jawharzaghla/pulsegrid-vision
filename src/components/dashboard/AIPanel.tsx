@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Sparkles, Send, RefreshCw, Copy, Loader2, FileText, MessageSquare, Brain, Sun } from "lucide-react";
-import { analyzeWithAI, generateLocalAnalysis, buildAnalysisRequest, AIError } from "@/services/groq.service";
+import { analyzeWithAI, buildAnalysisRequest, AIError } from "@/services/groq.service";
 import type { AnalysisMode, CleanedMetricPayload } from "@/types/models";
 
 interface AIPanelProps {
@@ -45,9 +45,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
       if (err instanceof AIError && err.code === 'RATE_LIMITED') {
         setError(err.message);
       } else {
-        // Fallback to local analysis
-        const fallback = generateLocalAnalysis(mode, widgetPayloads);
-        setAnalysisContent((prev) => ({ ...prev, [mode]: fallback }));
+        setError('AI service is currently unavailable. Please try again later.');
       }
     } finally {
       setLoading((prev) => ({ ...prev, [mode]: false }));
@@ -65,8 +63,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
       const response = await analyzeWithAI(request);
       setChatMessages((prev) => [...prev, { role: "ai", content: response.content }]);
     } catch {
-      const fallback = generateLocalAnalysis("ask", widgetPayloads, q);
-      setChatMessages((prev) => [...prev, { role: "ai", content: fallback }]);
+      setChatMessages((prev) => [...prev, { role: "ai", content: "AI service is currently unavailable. Please try again later." }]);
     }
   };
 
@@ -98,8 +95,8 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
               key={tab.mode}
               onClick={() => setActiveTab(tab.mode)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${activeTab === tab.mode
-                  ? "bg-accent/10 text-accent border border-accent/30"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "bg-accent/10 text-accent border border-accent/30"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
             >
               {tab.icon}
@@ -130,8 +127,8 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted/50 text-foreground rounded-bl-md border border-border"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-muted/50 text-foreground rounded-bl-md border border-border"
                     }`}>
                     {msg.content}
                   </div>

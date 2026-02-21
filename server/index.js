@@ -11,11 +11,24 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });
 
+import { buildSystemPrompt, buildUserPrompt, EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt } from './prompts.js';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: ['http://localhost:8080', 'http://localhost:5173'] }));
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ limit: '2mb' }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+
+// Root route
+app.get('/', (req, res) => {
+    res.send('<h1>PulseGrid AI Proxy</h1><p>Endpoints: POST /api/ai/analyze, POST /api/ai/extract</p>');
+});
 
 // Init Groq client
 const groq = new Groq({
@@ -28,6 +41,7 @@ const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 // AI Analysis endpoint
 // =====================
 app.post('/api/ai/analyze', async (req, res) => {
+    console.log('--- AI Analysis Request Received ---');
     try {
         const { mode, widgetData, question } = req.body;
 
@@ -61,6 +75,68 @@ app.post('/api/ai/analyze', async (req, res) => {
     }
 });
 
+// =====================
+// AI Data Extraction endpoint (Add Widget flow)
+// =====================
+app.post('/api/ai/extract', async (req, res) => {
+    console.log('--- AI Extract Request Received ---');
+    try {
+        const { rawJson, description } = req.body;
+
+        if (!rawJson) {
+            return res.status(400).json({ error: 'rawJson is required' });
+        }
+        if (!description || typeof description !== 'string' || !description.trim()) {
+            return res.status(400).json({ error: 'description is required' });
+        }
+
+        const rawJsonString = typeof rawJson === 'string' ? rawJson : JSON.stringify(rawJson, null, 2);
+        const userPrompt = buildExtractUserPrompt(rawJsonString, description.trim());
+
+        const completion = await groq.chat.completions.create({
+            model: MODEL,
+            messages: [
+                { role: 'system', content: EXTRACT_SYSTEM_PROMPT },
+                { role: 'user', content: userPrompt },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.2,
+            max_tokens: 500,
+        });
+
+        const content = completion.choices[0]?.message?.content || '';
+        console.log('Groq extract raw response:', content);
+
+        // Validate that the response is parseable JSON
+        let parsed;
+        try {
+            parsed = JSON.parse(content);
+        } catch {
+            console.error('Groq returned non-JSON response:', content);
+            return res.status(422).json({ code: 'EXTRACTION_FAILED' });
+        }
+
+        // Check if Groq reported metric not found
+        if (parsed.error === 'metric_not_found') {
+            return res.status(422).json({ code: 'METRIC_NOT_FOUND' });
+        }
+
+        // Validate the shape has at minimum a primaryValue
+        if (parsed.primaryValue === undefined && parsed.primaryValue === null) {
+            console.error('Groq response missing primaryValue:', parsed);
+            return res.status(422).json({ code: 'EXTRACTION_FAILED' });
+        }
+
+        res.json(parsed);
+    } catch (err) {
+        console.error('Groq Extract error:', err);
+        if (err?.status === 429) {
+            return res.status(429).json({ code: 'RATE_LIMITED' });
+        }
+        res.status(500).json({ code: 'EXTRACTION_FAILED' });
+    }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', model: MODEL });
@@ -69,37 +145,3 @@ app.get('/api/health', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🧠 PulseGrid AI Proxy running on http://localhost:${PORT}`);
 });
-
-// =====================
-// Prompt builders
-// =====================
-function buildSystemPrompt(mode) {
-    const base = 'You are an expert BI analyst for PulseGrid. Analyze the provided business metrics and give actionable insights. Use markdown formatting for clarity. Be concise but thorough.';
-
-    switch (mode) {
-        case 'project-brief':
-            return `${base} Provide a comprehensive project brief with key findings, trends, and strategic recommendations.`;
-        case 'widget':
-            return `${base} Analyze individual widget metrics in detail. Identify anomalies, patterns, and correlations.`;
-        case 'daily-brief':
-            return `${base} Provide a concise daily brief highlighting the most important changes and action items for today.`;
-        case 'ask':
-            return `${base} Answer the user's specific question about their data. If you are unsure, say so.`;
-        default:
-            return base;
-    }
-}
-
-function buildUserPrompt(mode, widgetData, question) {
-    const dataBlock = widgetData.map((w) => {
-        const trend = w.trend != null ? ` (trend: ${w.trend > 0 ? '+' : ''}${w.trend}%)` : '';
-        const unit = w.unit ? ` ${w.unit}` : '';
-        return `- ${w.widgetTitle}: ${w.primaryValue}${unit}${trend}`;
-    }).join('\n');
-
-    if (mode === 'ask' && question) {
-        return `Here is my current data:\n${dataBlock}\n\nMy question: ${question}`;
-    }
-
-    return `Here is the current data from my dashboard:\n${dataBlock}\n\nPlease analyze these metrics.`;
-}

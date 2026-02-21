@@ -137,6 +137,39 @@ app.post('/api/ai/extract', async (req, res) => {
     }
 });
 
+// =====================
+// Sales Chatbot endpoint
+// =====================
+app.post('/api/ai/sales', async (req, res) => {
+    try {
+        const { message, history } = req.body;
+
+        if (!message) {
+            return res.status(400).json({ error: 'message is required' });
+        }
+
+        const userPrompt = buildSalesUserPrompt(message, history || []);
+
+        const completion = await groq.chat.completions.create({
+            model: MODEL,
+            messages: [
+                { role: 'system', content: SALES_SYSTEM_PROMPT },
+                { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
+        });
+
+        const content = completion.choices[0]?.message?.content || 'I am here to help you scaling your business.';
+        const tokensUsed = completion.usage?.total_tokens || 0;
+
+        res.json({ content, model: MODEL, tokensUsed });
+    } catch (err) {
+        console.error('Groq Sales Chat error:', err);
+        res.status(500).json({ error: 'Failed to reach support' });
+    }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', model: MODEL });

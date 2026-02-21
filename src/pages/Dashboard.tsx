@@ -3,13 +3,13 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Settings, FileDown, Sparkles, MoreHorizontal, Plus, RefreshCw, Loader2, AlertTriangle, Trash2, Edit3 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { ResponsiveGridLayout, useContainerWidth } from "react-grid-layout";
-import type { Layout } from "react-grid-layout";
+import type { Layout, LayoutItem as RGLLayoutItem } from "react-grid-layout";
 import AddWidgetDrawer from "@/components/dashboard/AddWidgetDrawer";
 import AIPanel from "@/components/dashboard/AIPanel";
 import { getProject, saveLayout, deleteWidget } from "@/services/firestore.service";
 import { fetchAllWidgetData } from "@/services/api-fetch.service";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Project, Widget, CleanedMetricPayload, WidgetError, LayoutItem } from "@/types/models";
+import type { Project, Widget, CleanedMetricPayload, WidgetError, LayoutItem as ProjectLayoutItem } from "@/types/models";
 
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -114,7 +114,7 @@ const Dashboard = () => {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
-  const [currentLayout, setCurrentLayout] = useState<Layout[]>([]);
+  const [currentLayout, setCurrentLayout] = useState<Layout>([]);
 
   const { width, containerRef, mounted } = useContainerWidth();
 
@@ -131,7 +131,7 @@ const Dashboard = () => {
         setWidgetData(data);
 
         // Map initial layout or use stored layout
-        const initialLayout: Layout[] = proj.widgets.map((w, i) => {
+        const initialLayout: Layout = proj.widgets.map((w, i) => {
           const stored = proj.layout.find((l) => l.widgetId === w.id);
           if (stored) return { i: w.id, ...stored };
           // Default layout: 3x2 grid items
@@ -186,12 +186,12 @@ const Dashboard = () => {
     }
   };
 
-  const onLayoutChange = async (layout: Layout[]) => {
+  const onLayoutChange = (layout: Layout) => {
     if (!id || !project) return;
     setCurrentLayout(layout);
 
     // Save to Firestore
-    const layoutItems: LayoutItem[] = layout.map((l) => ({
+    const layoutItems: ProjectLayoutItem[] = layout.map((l) => ({
       widgetId: l.i,
       x: l.x,
       y: l.y,
@@ -199,11 +199,9 @@ const Dashboard = () => {
       h: l.h,
     }));
 
-    try {
-      await saveLayout(id, layoutItems);
-    } catch (err) {
+    saveLayout(id, layoutItems).catch((err) => {
       console.error("Failed to save layout:", err);
-    }
+    });
   };
 
   const timeAgo = () => {
@@ -293,7 +291,7 @@ const Dashboard = () => {
               cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
               rowHeight={100}
               width={width}
-              draggableHandle=".text-micro"
+              {...({ draggableHandle: ".text-micro" } as any)}
               onLayoutChange={onLayoutChange}
             >
               {project!.widgets.map((widget) => {

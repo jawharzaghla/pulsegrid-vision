@@ -36,6 +36,26 @@ export async function analyzeWithAI(request: AnalysisRequest): Promise<AIRespons
 }
 
 /**
+ * Sales Chatbot — sends message + history to the backend /api/ai/sales endpoint.
+ */
+export async function callSalesChatbot(
+    message: string,
+    history: { role: 'user' | 'assistant'; content: string }[] = []
+): Promise<AIResponse> {
+    const res = await fetch(`${API_BASE}/ai/sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, history }),
+    });
+
+    if (!res.ok) {
+        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}`);
+    }
+
+    return res.json();
+}
+
+/**
  * AI Data Extraction — sends raw JSON + user description to
  * the backend /api/ai/extract endpoint. Returns a typed CleanedMetricPayload.
  * Used by the Add Widget flow (Step 2) and widget refresh for AI-extracted widgets.

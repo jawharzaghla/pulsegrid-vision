@@ -16,16 +16,16 @@ const HeroSection = () => {
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             Connect any REST API. Add a widget. Get AI-powered insight in minutes.
           </p>
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/signup"
-              className="px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all text-body-lg glow-primary"
+              className="w-full sm:w-auto px-8 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all text-body-lg glow-primary text-center"
             >
               Start for Free
             </Link>
             <Link
               to="/app/projects/demo"
-              className="px-8 py-3.5 border border-border hover:border-primary/50 text-foreground font-medium rounded-lg transition-all text-body-lg"
+              className="w-full sm:w-auto px-8 py-3.5 border border-border hover:border-primary/50 text-foreground font-medium rounded-lg transition-all text-body-lg text-center"
             >
               See it in action
             </Link>

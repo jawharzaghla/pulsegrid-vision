@@ -13,6 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import ProjectSettings from "./pages/ProjectSettings";
 import AccountSettings from "./pages/AccountSettings";
 import AppLayout from "./components/AppLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,14 @@ const App = () => (
               <Route path="projects/:id/settings" element={<ProjectSettings />} />
               <Route path="settings" element={<AccountSettings />} />
             </Route>
+            <Route
+              path="/admin"
+              element={
+                <AdminGuard>
+                  <AdminDashboard />
+                </AdminGuard>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

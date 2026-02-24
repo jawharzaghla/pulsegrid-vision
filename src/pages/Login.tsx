@@ -26,8 +26,15 @@ const Login = () => {
     try {
       setSubmitting(true);
       await handleSignIn(email, password);
-      navigate(from, { replace: true });
-    } catch {
+
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+      if (email === adminEmail) {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
+    } catch (err) {
+      console.error("Login onSubmit error:", err);
       // Error is already set in AuthContext
     } finally {
       setSubmitting(false);
@@ -38,8 +45,14 @@ const Login = () => {
     try {
       setSubmitting(true);
       await handleGoogleSignIn();
+
+      // For Google sign-in, we check the auth context's isAdmin flag or the email
+      // But since handleGoogleSignIn doesn't return the user, we can check 
+      // the AuthContext's firebaseUser or email directly if possible.
+      // However, the admin is intended to be email/password.
       navigate(from, { replace: true });
-    } catch {
+    } catch (err) {
+      console.error("Login onGoogleSignIn error:", err);
       // Error is already set in AuthContext
     } finally {
       setSubmitting(false);

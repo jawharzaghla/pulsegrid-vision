@@ -5,6 +5,8 @@ import { encrypt, decrypt } from "@/services/crypto.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { testConnection } from "@/services/api-fetch.service";
 import { extractWithAI, AIError } from "@/services/groq.service";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { TIER_LIMITS } from "@/types/models";
 import type {
   Widget,
   VisualizationType,
@@ -85,7 +87,8 @@ function isValidUrl(url: string): boolean {
 
 const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: AddWidgetDrawerProps) => {
   const [step, setStep] = useState(0);
-  const { cryptoKey } = useAuth();
+  const { cryptoKey, tier } = useAuth();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Step 1 — Endpoint Configuration
   const [title, setTitle] = useState("");
@@ -763,10 +766,25 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
                   onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
                   className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 >
-                  {REFRESH_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
+                  {REFRESH_OPTIONS.map((o) => {
+                    const minInt = TIER_LIMITS[tier || 'free'].minRefreshInterval;
+                    const isDisabled = o.value !== "" && (minInt === null || Number(o.value) < minInt);
+                    return (
+                      <option key={o.value} value={o.value} disabled={isDisabled}>
+                        {o.label} {isDisabled ? "(Pro only)" : ""}
+                      </option>
+                    );
+                  })}
                 </select>
+                {(tier === 'free' || !tier) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="text-[10px] text-pg-primary mt-1 hover:underline"
+                  >
+                    Débloquer le rafraîchissement automatique →
+                  </button>
+                )}
               </div>
 
               <div>
@@ -843,6 +861,13 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
           )}
         </div>
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="Rafraîchissement Automatique"
+        description="Le rafraîchissement automatique est une fonctionnalité Premium. Passez à Pro pour des mises à jour toutes les 30 secondes."
+      />
     </div>
   );
 };

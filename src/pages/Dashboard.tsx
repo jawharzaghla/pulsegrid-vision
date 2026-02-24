@@ -9,6 +9,8 @@ import AIPanel from "@/components/dashboard/AIPanel";
 import { getProject, saveLayout, deleteWidget } from "@/services/firestore.service";
 import { fetchAllWidgetData } from "@/services/api-fetch.service";
 import { useAuth } from "@/contexts/AuthContext";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { TIER_LIMITS } from "@/types/models";
 import type { Project, Widget, CleanedMetricPayload, WidgetError, LayoutItem as ProjectLayoutItem } from "@/types/models";
 
 import "react-grid-layout/css/styles.css";
@@ -105,8 +107,9 @@ const WidgetErrorCard = forwardRef<HTMLDivElement, { error: WidgetError; onEdit:
 
 const Dashboard = () => {
   const { id } = useParams();
-  const { cryptoKey } = useAuth();
+  const { cryptoKey, tier } = useAuth();
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,6 +172,17 @@ const Dashboard = () => {
     setShowDrawer(false);
     setEditingWidget(null);
     loadProject();
+  };
+
+  const handleAddWidget = () => {
+    if (!project) return;
+    const currentTier = tier || 'free';
+    const limit = TIER_LIMITS[currentTier].widgetsPerProject;
+    if (project.widgets.length >= limit) {
+      setShowUpgradeModal(true);
+    } else {
+      setShowDrawer(true);
+    }
   };
 
   const handleEditWidget = (widget: Widget) => {
@@ -274,7 +288,7 @@ const Dashboard = () => {
             Connect your favorite APIs and start visualizing your data. Your dashboard is ready for your first widget.
           </p>
           <button
-            onClick={() => setShowDrawer(true)}
+            onClick={handleAddWidget}
             className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95"
           >
             <Plus size={18} /> Add Your First Widget
@@ -331,7 +345,7 @@ const Dashboard = () => {
 
       {/* Add Widget FAB */}
       <button
-        onClick={() => setShowDrawer(true)}
+        onClick={handleAddWidget}
         className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-accent text-accent-foreground flex items-center justify-center card-shadow pulse-glow transition-transform hover:scale-110 z-30"
       >
         <Plus size={24} />
@@ -352,6 +366,13 @@ const Dashboard = () => {
         )
       }
       {showAI && <AIPanel projectId={id || ""} widgetPayloads={allPayloads} onClose={() => setShowAI(false)} />}
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="Limite de widgets atteinte"
+        description={`Votre plan actuel (${tier || 'free'}) est limité à ${TIER_LIMITS[tier || 'free'].widgetsPerProject} widgets par projet. Passez à un plan supérieur pour en ajouter plus.`}
+      />
     </div >
   );
 };

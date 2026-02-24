@@ -8,22 +8,86 @@ import express from 'express';
 import cors from 'cors';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
+import admin from 'firebase-admin';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config({ path: '../.env' });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-import { buildSystemPrompt, buildUserPrompt, EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt } from './prompts.js';
+dotenv.config({ path: path.join(__dirname, '../.env') });
+console.log('--- Loading .env from:', path.join(__dirname, '../.env'));
+
+// Initialize Firebase Admin
+if (!admin.apps.length) {
+    console.log('--- Firebase Admin: Checking Configuration ---');
+    const serviceAccount = {
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
+
+    console.log('Project ID:', serviceAccount.projectId || 'MISSING');
+    console.log('Client Email:', serviceAccount.clientEmail || 'MISSING');
+    console.log('Private Key Loaded:', serviceAccount.privateKey ? 'YES (starts with ' + serviceAccount.privateKey.substring(0, 20) + '...)' : 'NO');
+
+    if (serviceAccount.clientEmail && serviceAccount.privateKey) {
+        console.log('--- Initializing Firebase Admin with service account from ENV ---');
+        try {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                projectId: serviceAccount.projectId,
+            });
+        } catch (err) {
+            console.error('ERROR: Firebase Admin initialization failed:', err.message);
+        }
+    } else {
+        console.log('--- Firebase Admin Fallback: Missing Service Account Credentials ---');
+        console.log('To use the admin dashboard, you MUST add FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY to your .env file.');
+
+        try {
+            admin.initializeApp({
+                credential: admin.credential.applicationDefault(),
+                projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+            });
+            console.log('Firebase Admin initialized with ADC.');
+        } catch (err) {
+            console.warn('Firebase Admin ADC initialization failed (expected if not on GCP).');
+        }
+    }
+}
+
+import { buildSystemPrompt, buildUserPrompt, EXTRACT_SYSTEM_PROMPT, buildExtractUserPrompt, SALES_SYSTEM_PROMPT, buildSalesUserPrompt } from './prompts.js';
+import authRouter from './auth.js';
+import billingRouter from './billing.js';
+import adminRouter from './admin.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
+
+// Webhook route MUST be before express.json()
+app.use('/api/billing/webhook', billingRouter);
+
 app.use(express.json({ limit: '2mb' }));
+
+// Auth and Billing routes
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/billing', (req, res, next) => {
+    // Skip /webhook for this middleware as it's already registered above
+    if (req.path === '/webhook') return next('router');
+    next();
+}, billingRouter);
+
 
 // Request logging middleware
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
 
 // Root route
 app.get('/', (req, res) => {

@@ -20,6 +20,9 @@ import type { PulseGridUser } from '@/types/models';
 interface AuthContextType {
     firebaseUser: User | null;
     profile: PulseGridUser | null;
+    accessToken: string | null;
+    tier: 'free' | 'pro' | 'business';
+    isAdmin: boolean;
     cryptoKey: CryptoKey | null;
     loading: boolean;
     error: string | null;
@@ -35,9 +38,65 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<PulseGridUser | null>(null);
+    const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [tier, setTier] = useState<'free' | 'pro' | 'business'>('free');
+    const [isAdmin, setIsAdmin] = useState(false);
     const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+
+    const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+
+    /**
+     * Decode JWT role
+     */
+    const getRoleFromToken = (token: string | null) => {
+        if (!token) return null;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.role;
+        } catch {
+            return null;
+        }
+    };
+
+    /**
+     * Exchange Firebase ID token for backend JWT
+     */
+    const syncBackendAuth = async (user: User) => {
+        try {
+            const idToken = await user.getIdToken();
+
+            // Branch: Admin vs User
+            const endpoint = user.email === ADMIN_EMAIL ? '/auth/admin-token' : '/auth/exchange-token';
+            const body = user.email === ADMIN_EMAIL ? { firebaseIdToken: idToken } : { idToken };
+
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setAccessToken(data.accessToken);
+
+                if (user.email === ADMIN_EMAIL) {
+                    setIsAdmin(true);
+                    setTier('business'); // Admins get business tier capabilities
+                } else {
+                    setTier(data.tier || 'free');
+                    setIsAdmin(false);
+                }
+                return data;
+            }
+        } catch (err) {
+            console.error('Failed to sync backend auth:', err);
+        }
+        return null;
+    };
 
     // Listen to Firebase auth state
     useEffect(() => {
@@ -45,13 +104,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setFirebaseUser(user);
             if (user) {
                 try {
-                    const userProfile = await getUserProfile(user.uid);
-                    setProfile(userProfile);
+                    if (user.email !== ADMIN_EMAIL) {
+                        const userProfile = await getUserProfile(user.uid);
+                        setProfile(userProfile);
+                        if (userProfile?.tier) setTier(userProfile.tier);
+                        setIsAdmin(false);
+                    } else {
+                        setProfile({
+                            id: user.uid,
+                            email: user.email,
+                            name: 'Super Admin',
+                            tier: 'business',
+                            createdAt: new Date().toISOString()
+                        } as PulseGridUser);
+                        setIsAdmin(true);
+                    }
+                    await syncBackendAuth(user);
                 } catch {
                     setProfile(null);
                 }
             } else {
                 setProfile(null);
+                setAccessToken(null);
+                setTier('free');
+                setIsAdmin(false);
             }
             setLoading(false);
         });
@@ -128,6 +204,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             value={{
                 firebaseUser,
                 profile,
+                accessToken,
+                tier,
+                isAdmin,
                 cryptoKey,
                 loading,
                 error,

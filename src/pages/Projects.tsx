@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Search, Plus, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserProjects, createProject, deleteProject } from "@/services/firestore.service";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { TIER_LIMITS } from "@/types/models";
 import type { Project } from "@/types/models";
 
 const emojis = ["📊", "💻", "🛍️", "🏠", "🚀", "📈", "💰", "🎯", "⚡", "🌍", "📱", "🔥", "✨", "🎨", "🧠", "📦", "🏢", "🛠️", "📡", "💎"];
@@ -29,10 +31,11 @@ const borderColorMap: Record<string, string> = {
 };
 
 const Projects = () => {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, tier } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // New project form state
@@ -116,7 +119,18 @@ const Projects = () => {
               className="pl-9 pr-4 py-2 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-64 transition-all"
             />
           </div>
-          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all text-body">
+          <button
+            onClick={() => {
+              const currentTier = tier || 'free';
+              const limit = TIER_LIMITS[currentTier].projects;
+              if (projects.length >= limit) {
+                setShowUpgradeModal(true);
+              } else {
+                setShowModal(true);
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all text-body"
+          >
             <Plus size={16} /> New Project
           </button>
         </div>

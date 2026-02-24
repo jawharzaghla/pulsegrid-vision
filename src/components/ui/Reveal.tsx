@@ -1,4 +1,4 @@
-import { useRef, ReactNode } from "react";
+import { useRef, ReactNode, useState, useEffect } from "react";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,32 @@ const Reveal = ({
 }: RevealProps) => {
     const ref = useRef<HTMLDivElement>(null);
     const entry = useIntersectionObserver(ref, { threshold, freezeOnceVisible: once });
-    const isVisible = !!entry?.isIntersecting;
+    const [isTriggered, setIsTriggered] = useState(false);
+
+    // Initial check for IntersectionObserver support
+    const hasIOSupport = typeof window !== "undefined" && !!window.IntersectionObserver;
+
+    useEffect(() => {
+        if (entry?.isIntersecting) {
+            setIsTriggered(true);
+        }
+    }, [entry?.isIntersecting]);
+
+    // Safety fallback: if IntersectionObserver is not supported or 
+    // if the element hasn't been revealed after a long enough time (e.g. 2s after delay), 
+    // reveal it anyway to avoid a blank site.
+    useEffect(() => {
+        if (!hasIOSupport) {
+            setIsTriggered(true);
+            return;
+        }
+
+        const safetyTimeout = setTimeout(() => {
+            setIsTriggered(true);
+        }, delay + duration + 1000); // Wait until animation should have finished + buffer
+
+        return () => clearTimeout(safetyTimeout);
+    }, [hasIOSupport, delay, duration]);
 
     const animationClasses = {
         "fade-in": "animate-in fade-in fill-mode-both",
@@ -38,14 +63,15 @@ const Reveal = ({
         <div
             ref={ref}
             className={cn(
-                "opacity-0", // Start hidden
-                isVisible && animationClasses[animation],
+                "transition-opacity duration-300",
+                !isTriggered && "opacity-0 translate-y-4", // Start hidden with slight offset
+                isTriggered && animationClasses[animation],
                 className
             )}
             style={{
                 animationDelay: `${delay}ms`,
                 animationDuration: `${duration}ms`,
-                animationFillMode: "both", // Ensures it stays visible after animation
+                animationFillMode: "both",
             }}
         >
             {children}

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Sparkles, Send, RefreshCw, Copy, Loader2, FileText, MessageSquare, Brain, Sun } from "lucide-react";
 import { analyzeWithAI, buildAnalysisRequest, AIError } from "@/services/groq.service";
+import { useAuth } from "@/contexts/AuthContext";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import type { AnalysisMode, CleanedMetricPayload } from "@/types/models";
 
 interface AIPanelProps {
@@ -22,12 +24,14 @@ const tabs: { mode: AnalysisMode; label: string; icon: React.ReactNode }[] = [
 ];
 
 const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
+  const { tier } = useAuth();
   const [activeTab, setActiveTab] = useState<AnalysisMode>("project-brief");
   const [analysisContent, setAnalysisContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,6 +48,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
     } catch (err) {
       if (err instanceof AIError && err.code === 'RATE_LIMITED') {
         setError(err.message);
+        setShowUpgradeModal(true);
       } else {
         setError('AI service is currently unavailable. Please try again later.');
       }
@@ -204,6 +209,13 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
           </div>
         )}
       </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="Quota IA Atteint"
+        description="Vous avez atteint votre limite d'analyses IA pour aujourd'hui. Passez à un plan supérieur pour des analyses illimitées."
+      />
     </div>
   );
 };

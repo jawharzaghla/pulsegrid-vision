@@ -49,6 +49,8 @@ export interface Widget {
   displayOptions: DisplayOptions;
   refreshInterval: number | null; // seconds, null = manual only
   lastFetchedAt: string | null;
+  cachedPayload?: CleanedMetricPayload | null; // Persisted AI extraction result
+  cachedAt?: string | null;                     // ISO timestamp of last cache
 }
 
 export interface DataMapping {

@@ -1,73 +1,113 @@
-# Welcome to your Lovable project
+# PulseGrid Vision
 
-## Project info
+> **Unified Intelligence. Zero Overhead.**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+PulseGrid is a SaaS Business Intelligence platform for multi-business operators. Connect any REST API, configure a widget, and get a live, AI-enriched dashboard in one unified workspace.
 
-## How can I edit this code?
+## Tech Stack
 
-There are several ways of editing your application.
+| Layer | Technology |
+|---|---|
+| Frontend | React + TypeScript (Vite) |
+| Styling | Tailwind CSS |
+| Charting | Recharts |
+| AI Engine | OpenRouter API (auto model selection) |
+| Auth | Firebase Auth |
+| Database | Cloud Firestore |
+| Backend | Express.js (AI proxy + auth) |
 
-**Use Lovable**
+## Getting Started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 1. Install Dependencies
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm install
+cd server && npm install && cd ..
 ```
 
-**Edit a file directly in GitHub**
+### 2. Configure Environment
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Copy `.env` and fill in your values:
 
-**Use GitHub Codespaces**
+```bash
+# Required
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+OPENROUTER_API_KEY=sk-or-v1-...
+AI_MODEL=openrouter/auto
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 3. Seed Demo Data
 
-## What technologies are used for this project?
+```bash
+node server/seed-demo.js
+```
 
-This project is built with:
+This fetches real data from CoinGecko, Open-Meteo, and REST Countries APIs, then creates demo projects in Firestore.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### 4. Run Development Server
 
-## How can I deploy this project?
+```bash
+# Terminal 1: Frontend
+npm run dev
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+# Terminal 2: Backend proxy
+cd server && node index.js
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Demo Pages
 
-Yes, you can!
+The platform includes pre-configured demo dashboards accessible without authentication:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+| Route | Tier | Content |
+|---|---|---|
+| `/demo/free` | Free | 1 project, 5 widgets (crypto market data) |
+| `/demo/pro` | Pro | 3 projects (crypto + weather + world data) |
+| `/demo/business` | Business | 3 projects with full feature access |
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Demo data is seeded from real public APIs and stored in Firestore.
+
+## Project Structure
+
+```
+src/
+├── components/       # Shared & feature components
+│   ├── dashboard/    # Dashboard-specific (AI panel, widget drawer)
+│   ├── landing/      # Landing page sections
+│   └── ui/           # shadcn/ui primitives
+├── config/           # Demo IDs, constants
+├── contexts/         # Auth & Demo contexts
+├── lib/              # Firebase config, utilities
+├── pages/            # Route-level page components
+├── services/         # API fetch, AI, auth, Firestore
+└── types/            # TypeScript models
+
+server/
+├── index.js          # Express backend (OpenRouter AI proxy)
+├── auth.js           # Firebase auth token exchange
+├── admin.js          # Admin dashboard endpoints
+├── prompts.js        # AI system/user prompt builders
+└── seed-demo.js      # Demo data seeding script
+```
+
+## SaaS Tiers
+
+| Limit | Free | Pro | Business |
+|---|---|---|---|
+| Projects | 2 | 10 | Unlimited |
+| Widgets / project | 5 | 25 | Unlimited |
+| AI analyses / day | 5 | 100 | Unlimited |
+| Refresh interval | Manual | 30s | Real-time |
+| Team members | 1 | 3 | 15 |
+
+## Architecture
+
+- **AI requests** are proxied through the Express backend → OpenRouter API. The API key never reaches the browser.
+- **Widget data** is fetched directly from user-configured REST APIs (browser → API).
+- **Credentials** are encrypted client-side with AES-GCM 256-bit before storage.
+- **Demo pages** use public APIs (no auth required) with cached payloads for reliability.
+
+---
+
+*PulseGrid — Unified Intelligence. Zero Overhead.*

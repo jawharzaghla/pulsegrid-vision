@@ -16,6 +16,10 @@ import AppLayout from "./components/AppLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminGuard from "./components/AdminGuard";
 import NotFound from "./pages/NotFound";
+import DemoLayout from "./components/DemoLayout";
+import DemoFree from "./pages/DemoFree";
+import DemoProjects from "./pages/DemoProjects";
+import DemoDashboard from "./pages/DemoDashboard";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +55,20 @@ const App = () => (
                 </AdminGuard>
               }
             />
+
+            {/* Demo Routes — No Auth Required */}
+            <Route path="/demo/free" element={<DemoLayout tier="free" />}>
+              <Route index element={<DemoFree />} />
+            </Route>
+            <Route path="/demo/pro" element={<DemoLayout tier="pro" />}>
+              <Route index element={<DemoProjects tier="pro" />} />
+              <Route path="projects/:id" element={<DemoDashboard tier="pro" />} />
+            </Route>
+            <Route path="/demo/business" element={<DemoLayout tier="business" />}>
+              <Route index element={<DemoProjects tier="business" />} />
+              <Route path="projects/:id" element={<DemoDashboard tier="business" />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

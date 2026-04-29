@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
-import { Hexagon, FolderOpen, Settings, CreditCard, HelpCircle, LogOut, Loader2 } from "lucide-react";
+import { Hexagon, FolderOpen, Settings, HelpCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { icon: FolderOpen, label: "Projects", path: "/app/projects" },
   { icon: Settings, label: "Settings", path: "/app/settings" },
-  { icon: CreditCard, label: "Billing", path: "/app/settings" },
   { icon: HelpCircle, label: "Help", path: "#" },
 ];
 

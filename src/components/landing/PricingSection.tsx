@@ -7,24 +7,27 @@ const plans = [
     price: "$0",
     period: "forever",
     features: ["1 Project", "5 Widgets", "10 AI Analyses / day", "Community Support"],
-    cta: "Get Started",
+    cta: "Try Free Demo",
     highlighted: false,
+    link: "/demo/free",
   },
   {
     name: "Pro",
     price: "$19",
     period: "/mo",
     features: ["10 Projects", "250 Widgets", "100 AI Analyses / day", "Priority Support", "Custom Themes", "Export PDF"],
-    cta: "Start Pro Trial",
+    cta: "Try Pro Demo",
     highlighted: true,
+    link: "/demo/pro",
   },
   {
     name: "Business",
     price: "$49",
     period: "/mo",
     features: ["Unlimited Projects", "Unlimited Widgets", "Unlimited AI Analyses", "Dedicated Support", "SSO & Team Roles", "API Access", "White-label"],
-    cta: "Contact Sales",
+    cta: "Try Business Demo",
     highlighted: false,
+    link: "/demo/business",
   },
 ];
 
@@ -72,7 +75,7 @@ const PricingSection = () => {
               </ul>
 
               <Link
-                to="/signup"
+                to={plan.link}
                 className={`block w-full text-center py-2.5 rounded-lg font-medium text-body transition-all ${
                   plan.highlighted
                     ? "bg-primary hover:bg-primary/90 text-primary-foreground"

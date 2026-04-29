@@ -1,0 +1,108 @@
+@startuml Diagramme de Cas d'Utilisation - PulseGrid
+
+title Diagramme de Cas d'Utilisation PulseGrid
+
+left to right direction
+
+skinparam backgroundColor white
+skinparam actorBackgroundColor white
+skinparam actorBorderColor black
+skinparam usecaseBackgroundColor white
+skinparam usecaseBorderColor black
+skinparam arrowColor black
+skinparam noteBackgroundColor white
+skinparam noteBorderColor black
+skinparam actorFontColor black
+skinparam usecaseFontColor black
+skinparam noteFontColor black
+skinparam linetype ortho
+skinparam scale 0.75
+skinparam packageMargin 24
+skinparam usecasePadding 20
+skinparam actorPadding 24
+skinparam shadowing false
+skinparam nodePadding 12
+
+actor "Utilisateur Non Authentifié" as Unauth
+actor "Utilisateur Authentifié" as Auth
+actor "Administrateur" as Admin
+
+actor "Utilisateur Gratuit" as Free
+actor "Utilisateur Pro" as Pro
+actor "Utilisateur Business" as Business
+Free -|> Auth
+Pro -|> Auth
+Business -|> Auth
+
+note left of Auth
+Types d'utilisateurs authentifiés :\n- Gratuit\n- Pro\n- Business
+end note
+
+package "Fonctionnalités Publiques" {
+    usecase "Voir la Page d'Accueil\n(Fonctionnalités, Tarifs, Comment Ça Marche)" as UC1
+    usecase "Interagir avec le Chatbot Commercial\n(Support Client Alimenté par IA)" as UC2
+}
+
+package "Authentification" {
+    usecase "S'Inscrire\n(Créer un compte avec email/mot de passe)" as UC3
+    usecase "Se Connecter\n(S'authentifier avec email/mot de passe)" as UC4
+    usecase "Se Déconnecter\n(Terminer la session et effacer les clés crypto)" as UC5
+}
+
+package "Gestion des Projets" {
+    usecase "Voir la Liste des Projets\n(Parcourir les projets de l'utilisateur)" as UC6
+    usecase "Créer un Nouveau Projet\n(Configurer un espace de travail tableau de bord)" as UC7
+    usecase "Modifier les Paramètres du Projet\n(Modifier les détails et le thème du projet)" as UC13
+}
+
+package "Tableau de Bord et Widgets" {
+    usecase "Voir le Tableau de Bord du Projet\n(Voir les widgets et la disposition)" as UC8
+    usecase "Ajouter un Widget au Projet\n(Créer une nouvelle visualisation de données)" as UC9
+    usecase "Configurer le Widget\n(Définir l'endpoint API, auth, mapping)" as UC10
+    usecase "Actualiser les Données du Widget\n(Récupération manuelle des données)" as UC11
+}
+
+package "Analyse IA" {
+    usecase "Lancer une Analyse IA\n(Obtenir des insights des données des widgets)" as UC12
+}
+
+package "Compte et Administration" {
+    usecase "Voir les Paramètres du Compte\n(Gérer le profil et les préférences)" as UC14
+    usecase "Mettre à Niveau l'Abonnement\n(Passer de gratuit à pro/entreprise)" as UC15
+}
+
+usecase "Voir le Tableau de Bord Admin\n(Surveiller le système et les utilisateurs)" as UC16
+
+Unauth --> UC1
+Unauth --> UC2
+Unauth --> UC3
+Unauth --> UC4
+
+Auth --> UC5
+Auth --> UC6
+Auth --> UC7
+Auth --> UC8
+Auth --> UC9
+Auth --> UC10
+Auth --> UC11
+Auth --> UC12
+Auth --> UC13
+Auth --> UC14
+Auth --> UC15
+
+Admin --> UC16
+
+UC9 ..> UC10 : <<include>>
+UC10 ..> UC11 : <<include>>
+UC7 ..> UC15 : <<extend>> : limite atteinte
+UC12 ..> UC15 : <<extend>> : quota IA dépassé
+
+note right of UC15 : Les limites et les quotas sont\n appliqués par type d'abonnement.
+
+note right of UC16 : Dashboard administrateur\n- Surveillance des utilisateurs\n- Gestion du système
+
+note bottom of UC10 : Configuration du Widget :\n- URL endpoint REST\n- Authentification\n- Mapping de données\n- Type de visualisation\n- Options d'affichage
+
+note bottom of UC9 : Types de Widgets :\n- Carte KPI\n- Graphiques Ligne/Barre/Donut\n- Jauge\n- Table de Données\n- Indicateur de Statut\n- Sparkline
+
+@enduml

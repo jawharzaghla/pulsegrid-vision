@@ -14,6 +14,17 @@ import type {
   DrawerErrorCode,
 } from "@/types/models";
 import { DRAWER_ERROR_MESSAGES, getCompatibleVisualizations } from "@/types/models";
+import { isJsonLarge, refactorLargeJson } from "@/lib/json-refactor";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // =====================
 // Props & Constants
@@ -24,6 +35,8 @@ interface AddWidgetDrawerProps {
   editingWidget?: Widget | null;
   onClose: () => void;
   onWidgetAdded: () => void;
+  isDemo?: boolean;
+  onDemoSave?: (widget: Widget) => void;
 }
 
 const VIZ_TYPES: { type: VisualizationType; label: string; icon: string }[] = [
@@ -85,7 +98,7 @@ function isValidUrl(url: string): boolean {
 // Component
 // =====================
 
-const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: AddWidgetDrawerProps) => {
+const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isDemo, onDemoSave }: AddWidgetDrawerProps) => {
   const [step, setStep] = useState(0);
   const { cryptoKey, tier } = useAuth();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -102,6 +115,8 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
   const [testing, setTesting] = useState(false);
   const [testOk, setTestOk] = useState(false);
   const [rawJson, setRawJson] = useState<unknown>(null);
+  const [showRefactorModal, setShowRefactorModal] = useState(false);
+  const [unrefactoredJson, setUnrefactoredJson] = useState<unknown>(null);
 
   // Step 2 — AI Extraction
   const [userDescription, setUserDescription] = useState("");
@@ -232,13 +247,50 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
         return;
       }
 
-      setTestOk(true);
-      setRawJson(result.rawJson);
+      const json = result.rawJson;
+      if (isJsonLarge(json)) {
+        setUnrefactoredJson(json);
+        setShowRefactorModal(true);
+      } else {
+        setRawJson(json);
+        setTestOk(true);
+      }
     } catch {
       setDrawerError({ code: "STEP1_TIMEOUT", message: "Erreur réseau inattendue." });
     } finally {
       setTesting(false);
     }
+  };
+
+  // =====================
+  // JSON Refactoring
+  // =====================
+
+  const handleAcceptRefactor = () => {
+    if (!unrefactoredJson) return;
+    console.log('[AddWidgetDrawer] Initializing JSON refactoring process to reduce size...');
+    try {
+      const { refactoredData, wasRefactored } = refactorLargeJson(unrefactoredJson);
+      console.log(`[AddWidgetDrawer] Refactor complete. Was payload truncated? ${wasRefactored}`);
+      setRawJson(refactoredData);
+      setTestOk(true);
+      setShowRefactorModal(false);
+      setUnrefactoredJson(null);
+    } catch (err: any) {
+      console.error('[AddWidgetDrawer] JSON Refactor Error:', err);
+      setDrawerError({ code: "STEP1_NOT_JSON", message: err.message || "Failed to refactor JSON payload." });
+      setShowRefactorModal(false);
+      setUnrefactoredJson(null);
+    }
+  };
+
+  const handleDeclineRefactor = () => {
+    if (!unrefactoredJson) return;
+    console.log('[AddWidgetDrawer] Refactoring declined by user.');
+    setRawJson(unrefactoredJson);
+    setTestOk(true);
+    setShowRefactorModal(false);
+    setUnrefactoredJson(null);
   };
 
   // =====================
@@ -289,6 +341,35 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
     setDrawerError(null);
 
     try {
+      if (isDemo && onDemoSave) {
+        const dummyWidget: Widget = {
+          id: editingWidget ? editingWidget.id : `demo-widget-${Date.now()}`,
+          title,
+          endpointUrl,
+          authMethod,
+          authConfig: {}, // Dummy auth
+          dataMapping: {
+            primaryValuePath: "__ai_extracted__",
+            aiDescription: userDescription.trim(),
+          },
+          visualization: vizType,
+          displayOptions: {
+            unitPrefix,
+            unitSuffix,
+            decimalPlaces,
+            colorPalette,
+          },
+          refreshInterval,
+          lastFetchedAt: null,
+          cachedPayload: extractedPayload,
+          cachedAt: new Date().toISOString(),
+        };
+        onDemoSave(dummyWidget);
+        onWidgetAdded();
+        setSaving(false);
+        return;
+      }
+
       const authConfig: Record<string, string> = {};
 
       console.log('[handleSave] Saving with state:', {
@@ -354,6 +435,8 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
             colorPalette,
           },
           refreshInterval,
+          cachedPayload: extractedPayload,
+          cachedAt: new Date().toISOString(),
         });
       } else {
         await addWidget(projectId, {
@@ -374,6 +457,8 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
           },
           refreshInterval,
           lastFetchedAt: null,
+          cachedPayload: extractedPayload,
+          cachedAt: new Date().toISOString(),
         });
       }
 
@@ -414,451 +499,454 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
   // =====================
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-background/60 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="w-full max-w-lg bg-card border-l border-border h-full flex flex-col animate-slide-in-right"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <h2 className="text-lg font-bold">Add Widget</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X size={20} />
-          </button>
-        </div>
+    <>
+      <div className="fixed inset-0 z-50 flex justify-end">
+        {/* Backdrop isolated from the children so Portal events don't bubble here */}
+        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" onClick={onClose} />
 
-        {/* Step indicator */}
-        <div className="px-6 pt-4 flex items-center gap-2">
-          {STEPS.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 flex-1">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step
-                  ? "bg-success text-success-foreground"
-                  : i === step
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                  }`}
-              >
-                {i < step ? <Check size={14} /> : i + 1}
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-0.5 ${i < step ? "bg-success" : "bg-muted"}`} />
-              )}
-            </div>
-          ))}
-        </div>
-        <p className="px-6 pt-2 text-micro font-medium">{STEPS[step]}</p>
-
-        {/* Error banner (inside step panel) */}
-        {drawerError && (
-          <div className="mx-6 mt-3 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive flex items-start gap-2">
-            <AlertCircle size={16} className="mt-0.5 shrink-0" />
-            <span>{drawerError.message}</span>
+        {/* Drawer Panel */}
+        <div className="relative z-10 w-full max-w-lg bg-card border-l border-border h-full flex flex-col animate-slide-in-right">
+          {/* Header */}
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <h2 className="text-lg font-bold">Add Widget</h2>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+              <X size={20} />
+            </button>
           </div>
-        )}
 
-        {/* Step content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* ====== STEP 1: ENDPOINT CONFIG ====== */}
-          {step === 0 && (
-            <>
-              <div>
-                <label className="text-micro block mb-2">WIDGET TITLE</label>
-                <input
-                  placeholder="Monthly Revenue"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="text-micro block mb-2">API ENDPOINT URL</label>
-                <input
-                  placeholder="https://api.example.com/v1/data"
-                  value={endpointUrl}
-                  onChange={(e) => {
-                    setEndpointUrl(e.target.value);
-                    setTestOk(false);
-                    setRawJson(null);
-                    setDrawerError(null);
-                  }}
-                  className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="text-micro block mb-2">AUTHENTICATION</label>
-                <select
-                  value={authMethod}
-                  onChange={(e) => setAuthMethod(e.target.value as Widget["authMethod"])}
-                  className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          {/* Step indicator */}
+          <div className="px-6 pt-4 flex items-center gap-2">
+            {STEPS.map((s, i) => (
+              <div key={i} className="flex items-center gap-2 flex-1">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step
+                    ? "bg-success text-success-foreground"
+                    : i === step
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                    }`}
                 >
-                  {AUTH_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Auth-specific fields */}
-              {authMethod === "api-key" && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                  <div>
-                    <label className="text-micro block mb-2">HEADER NAME</label>
-                    <input
-                      placeholder="X-API-Key"
-                      value={apiKeyHeader}
-                      onChange={(e) => setApiKeyHeader(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-micro block mb-2">API KEY</label>
-                    <input
-                      type="password"
-                      placeholder="sk-..."
-                      value={apiKeyValue}
-                      onChange={(e) => setApiKeyValue(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    />
-                  </div>
+                  {i < step ? <Check size={14} /> : i + 1}
                 </div>
-              )}
+                {i < STEPS.length - 1 && (
+                  <div className={`flex-1 h-0.5 ${i < step ? "bg-success" : "bg-muted"}`} />
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="px-6 pt-2 text-micro font-medium">{STEPS[step]}</p>
 
-              {authMethod === "bearer" && (
-                <div className="animate-in fade-in slide-in-from-top-2">
-                  <label className="text-micro block mb-2">BEARER TOKEN</label>
+          {/* Error banner (inside step panel) */}
+          {drawerError && (
+            <div className="mx-6 mt-3 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive flex items-start gap-2">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{drawerError.message}</span>
+            </div>
+          )}
+
+          {/* Step content */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {/* ====== STEP 1: ENDPOINT CONFIG ====== */}
+            {step === 0 && (
+              <>
+                <div>
+                  <label className="text-micro block mb-2">WIDGET TITLE</label>
                   <input
-                    type="password"
-                    placeholder="eyJh..."
-                    value={bearerToken}
-                    onChange={(e) => setBearerToken(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    placeholder="Monthly Revenue"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   />
                 </div>
-              )}
 
-              {authMethod === "basic" && (
-                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                  <div>
-                    <label className="text-micro block mb-2">USERNAME</label>
-                    <input
-                      placeholder="admin"
-                      value={basicUsername}
-                      onChange={(e) => setBasicUsername(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    />
+                <div>
+                  <label className="text-micro block mb-2">API ENDPOINT URL</label>
+                  <input
+                    placeholder="https://api.example.com/v1/data"
+                    value={endpointUrl}
+                    onChange={(e) => {
+                      setEndpointUrl(e.target.value);
+                      setTestOk(false);
+                      setRawJson(null);
+                      setDrawerError(null);
+                    }}
+                    className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-micro block mb-2">AUTHENTICATION</label>
+                  <select
+                    value={authMethod}
+                    onChange={(e) => setAuthMethod(e.target.value as Widget["authMethod"])}
+                    className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  >
+                    {AUTH_METHODS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Auth-specific fields */}
+                {authMethod === "api-key" && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div>
+                      <label className="text-micro block mb-2">HEADER NAME</label>
+                      <input
+                        placeholder="X-API-Key"
+                        value={apiKeyHeader}
+                        onChange={(e) => setApiKeyHeader(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-micro block mb-2">API KEY</label>
+                      <input
+                        type="password"
+                        placeholder="sk-..."
+                        value={apiKeyValue}
+                        onChange={(e) => setApiKeyValue(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-micro block mb-2">PASSWORD</label>
+                )}
+
+                {authMethod === "bearer" && (
+                  <div className="animate-in fade-in slide-in-from-top-2">
+                    <label className="text-micro block mb-2">BEARER TOKEN</label>
                     <input
                       type="password"
-                      placeholder="••••••••"
-                      value={basicPassword}
-                      onChange={(e) => setBasicPassword(e.target.value)}
+                      placeholder="eyJh..."
+                      value={bearerToken}
+                      onChange={(e) => setBearerToken(e.target.value)}
                       className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                     />
                   </div>
-                </div>
-              )}
+                )}
 
-              {!cryptoKey && authMethod !== "none" && (
-                <div className="px-4 py-3 bg-warning/10 border border-warning/30 rounded-lg text-xs text-warning flex items-center gap-2">
-                  <AlertCircle size={14} />
-                  Encryption key not available. Please re-login to enable secure API storage.
-                </div>
-              )}
+                {authMethod === "basic" && (
+                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div>
+                      <label className="text-micro block mb-2">USERNAME</label>
+                      <input
+                        placeholder="admin"
+                        value={basicUsername}
+                        onChange={(e) => setBasicUsername(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-micro block mb-2">PASSWORD</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={basicPassword}
+                        onChange={(e) => setBasicPassword(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
 
-              {/* Test Connection button */}
-              <button
-                onClick={handleTestConnection}
-                disabled={!endpointUrl.trim() || testing}
-                className="w-full py-2.5 border border-border hover:border-primary/50 rounded-lg text-body font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-              >
-                {testing ? <Loader2 size={14} className="animate-spin" /> : null}
-                {testing ? "Testing..." : "Test Connection"}
-              </button>
+                {!cryptoKey && authMethod !== "none" && !isDemo && (
+                  <div className="px-4 py-3 bg-warning/10 border border-warning/30 rounded-lg text-xs text-warning flex items-center gap-2">
+                    <AlertCircle size={14} />
+                    Encryption key not available. Please re-login to enable secure API storage.
+                  </div>
+                )}
 
-              {/* Test result */}
-              {testOk && (
-                <div className="px-4 py-3 rounded-lg text-sm flex items-center gap-2 bg-success/10 text-success border border-success/30">
-                  <Check size={14} />
-                  200 OK — API response received
-                </div>
-              )}
+                {/* Test Connection button */}
+                <button
+                  onClick={handleTestConnection}
+                  disabled={!endpointUrl.trim() || testing}
+                  className="w-full py-2.5 border border-border hover:border-primary/50 rounded-lg text-body font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {testing ? <Loader2 size={14} className="animate-spin" /> : null}
+                  {testing ? "Testing..." : "Test Connection"}
+                </button>
 
-              {/* Raw JSON viewer */}
-              {rawJson && (
+                {/* Test result */}
+                {testOk && (
+                  <div className="px-4 py-3 rounded-lg text-sm flex items-center gap-2 bg-success/10 text-success border border-success/30">
+                    <Check size={14} />
+                    200 OK — API response received
+                  </div>
+                )}
+
+                {/* Raw JSON viewer */}
+                {rawJson && (
+                  <div>
+                    <label className="text-micro block mb-2">RAW RESPONSE</label>
+                    <pre className="p-4 bg-muted/30 border border-border rounded-lg text-xs text-foreground/80 overflow-auto max-h-48 font-mono whitespace-pre-wrap">
+                      {JSON.stringify(rawJson, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ====== STEP 2: AI DATA EXTRACTION ====== */}
+            {step === 1 && (
+              <>
+                {/* Read-only raw JSON */}
                 <div>
-                  <label className="text-micro block mb-2">RAW RESPONSE</label>
-                  <pre className="p-4 bg-muted/30 border border-border rounded-lg text-xs text-foreground/80 overflow-auto max-h-48 font-mono whitespace-pre-wrap">
+                  <label className="text-micro block mb-2">API RESPONSE (READ-ONLY)</label>
+                  <pre className="p-4 bg-muted/30 border border-border rounded-lg text-xs text-foreground/80 overflow-auto max-h-40 font-mono whitespace-pre-wrap">
                     {JSON.stringify(rawJson, null, 2)}
                   </pre>
                 </div>
-              )}
-            </>
-          )}
 
-          {/* ====== STEP 2: AI DATA EXTRACTION ====== */}
-          {step === 1 && (
-            <>
-              {/* Read-only raw JSON */}
-              <div>
-                <label className="text-micro block mb-2">API RESPONSE (READ-ONLY)</label>
-                <pre className="p-4 bg-muted/30 border border-border rounded-lg text-xs text-foreground/80 overflow-auto max-h-40 font-mono whitespace-pre-wrap">
-                  {JSON.stringify(rawJson, null, 2)}
-                </pre>
-              </div>
-
-              {/* Natural language description */}
-              <div>
-                <label className="text-micro block mb-2">WHAT METRIC DO YOU WANT TO TRACK?</label>
-                <input
-                  placeholder="ex: le revenu mensuel total, le nombre d'utilisateurs actifs, le taux de conversion"
-                  value={userDescription}
-                  onChange={(e) => {
-                    setUserDescription(e.target.value);
-                    setDrawerError(null);
-                  }}
-                  className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-
-              {/* Extract button */}
-              <button
-                onClick={handleExtract}
-                disabled={!userDescription.trim() || extracting}
-                className="w-full py-3 bg-accent/20 border border-accent/40 hover:bg-accent/30 text-accent rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-              >
-                {extracting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {extracting ? "Extraction en cours..." : "Extract with AI"}
-              </button>
-
-              {/* Extracted payload preview card */}
-              {extractedPayload && (
-                <div className="p-5 bg-muted/30 border border-accent/30 rounded-xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="flex items-center gap-2 text-accent text-xs font-semibold">
-                    <Check size={14} />
-                    EXTRACTION SUCCESSFUL
-                  </div>
-
-                  <div className="text-3xl font-bold text-foreground">
-                    {extractedPayload.unit && <span className="text-muted-foreground text-xl">{extractedPayload.unit}</span>}
-                    {typeof extractedPayload.primaryValue === "number"
-                      ? extractedPayload.primaryValue.toLocaleString()
-                      : extractedPayload.primaryValue}
-                  </div>
-
-                  {extractedPayload.widgetTitle && (
-                    <p className="text-sm text-muted-foreground">{extractedPayload.widgetTitle}</p>
-                  )}
-
-                  {extractedPayload.trend !== undefined && (
-                    <span className={`text-sm font-medium ${extractedPayload.trend >= 0 ? "text-success" : "text-destructive"}`}>
-                      {extractedPayload.trend >= 0 ? "+" : ""}{extractedPayload.trend}%
-                    </span>
-                  )}
-
-                  {extractedPayload.series && extractedPayload.series.length > 0 && (
-                    <div className="pt-2 border-t border-border">
-                      <p className="text-micro mb-2">SERIES DATA ({extractedPayload.series.length} points)</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {extractedPayload.series.slice(0, 5).map((s, i) => (
-                          <span key={i} className="px-2 py-1 bg-muted/50 rounded text-xs">
-                            {s.label}: {s.value}
-                          </span>
-                        ))}
-                        {extractedPayload.series.length > 5 && (
-                          <span className="px-2 py-1 text-xs text-muted-foreground">
-                            +{extractedPayload.series.length - 5} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ====== STEP 3: VISUALIZATION ====== */}
-          {step === 2 && (
-            <div className="grid grid-cols-3 gap-3">
-              {VIZ_TYPES.map((v) => {
-                const isCompatible = compatibleVizTypes.includes(v.type);
-                const reason = !isCompatible ? (INCOMPATIBILITY_REASONS[v.type] || "Non compatible") : "";
-
-                return (
-                  <div key={v.type} className="relative group">
-                    <button
-                      onClick={() => isCompatible && setVizType(v.type)}
-                      disabled={!isCompatible}
-                      className={`w-full p-4 rounded-xl text-center transition-all border ${!isCompatible
-                        ? "opacity-40 cursor-not-allowed bg-muted/10 border-border"
-                        : vizType === v.type
-                          ? "bg-primary/10 border-primary ring-1 ring-primary"
-                          : "bg-muted/30 border-border hover:border-primary/40"
-                        }`}
-                    >
-                      <span className="text-2xl block mb-1">{v.icon}</span>
-                      <span className="text-xs">{v.label}</span>
-                    </button>
-
-                    {/* Tooltip for incompatible types */}
-                    {!isCompatible && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-foreground text-background text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        {reason}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ====== STEP 4: DISPLAY OPTIONS ====== */}
-          {step === 3 && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
+                {/* Natural language description */}
                 <div>
-                  <label className="text-micro block mb-2">UNIT PREFIX</label>
+                  <label className="text-micro block mb-2">WHAT METRIC DO YOU WANT TO TRACK?</label>
                   <input
-                    placeholder="$, €"
-                    value={unitPrefix}
-                    onChange={(e) => setUnitPrefix(e.target.value)}
+                    placeholder="ex: le revenu mensuel total, le nombre d'utilisateurs actifs, le taux de conversion"
+                    value={userDescription}
+                    onChange={(e) => {
+                      setUserDescription(e.target.value);
+                      setDrawerError(null);
+                    }}
                     className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   />
                 </div>
-                <div>
-                  <label className="text-micro block mb-2">UNIT SUFFIX</label>
-                  <input
-                    placeholder="%, k"
-                    value={unitSuffix}
-                    onChange={(e) => setUnitSuffix(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="text-micro block mb-2">DECIMAL PLACES</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setDecimalPlaces(Math.max(0, decimalPlaces - 1))}
-                    className="w-10 h-10 bg-muted/50 border border-border rounded-lg flex items-center justify-center text-foreground hover:bg-muted transition-all"
-                  >
-                    −
-                  </button>
-                  <span className="text-lg font-bold w-8 text-center">{decimalPlaces}</span>
-                  <button
-                    onClick={() => setDecimalPlaces(Math.min(4, decimalPlaces + 1))}
-                    className="w-10 h-10 bg-muted/50 border border-border rounded-lg flex items-center justify-center text-foreground hover:bg-muted transition-all"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-micro block mb-2">REFRESH INTERVAL</label>
-                <select
-                  value={refreshInterval ?? ""}
-                  onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                {/* Extract button */}
+                <button
+                  onClick={handleExtract}
+                  disabled={!userDescription.trim() || extracting}
+                  className="w-full py-3 bg-accent/20 border border-accent/40 hover:bg-accent/30 text-accent rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
-                  {REFRESH_OPTIONS.map((o) => {
-                    const minInt = TIER_LIMITS[tier || 'free'].minRefreshInterval;
-                    const isDisabled = o.value !== "" && (minInt === null || Number(o.value) < minInt);
-                    return (
-                      <option key={o.value} value={o.value} disabled={isDisabled}>
-                        {o.label} {isDisabled ? "(Pro only)" : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-                {(tier === 'free' || !tier) && (
-                  <button
-                    type="button"
-                    onClick={() => setShowUpgradeModal(true)}
-                    className="text-[10px] text-pg-primary mt-1 hover:underline"
-                  >
-                    Débloquer le rafraîchissement automatique →
-                  </button>
-                )}
-              </div>
+                  {extracting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {extracting ? "Extraction en cours..." : "Extract with AI"}
+                </button>
 
-              <div>
-                <label className="text-micro block mb-2">COLOR PALETTE</label>
-                <div className="flex gap-2">
-                  {COLOR_SWATCHES.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setColorPalette(color)}
-                      className={`w-9 h-9 rounded-full transition-all hover:scale-110 ${colorPalette === color ? "ring-2 ring-foreground/50 scale-110" : ""
-                        }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
+                {/* Extracted payload preview card */}
+                {extractedPayload && (
+                  <div className="p-5 bg-muted/30 border border-accent/30 rounded-xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center gap-2 text-accent text-xs font-semibold">
+                      <Check size={14} />
+                      EXTRACTION SUCCESSFUL
+                    </div>
 
-              {/* Live preview */}
-              {extractedPayload && vizType && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Eye size={14} className="text-muted-foreground" />
-                    <label className="text-micro">LIVE PREVIEW</label>
-                  </div>
-                  <div className="p-5 bg-muted/20 border border-border rounded-xl">
-                    <p className="text-xs text-muted-foreground mb-1">{title || "Widget"}</p>
-                    <p className="text-3xl font-bold" style={{ color: colorPalette }}>
-                      {formatValue(extractedPayload.primaryValue)}
-                    </p>
+                    <div className="text-3xl font-bold text-foreground">
+                      {extractedPayload.unit && <span className="text-muted-foreground text-xl">{extractedPayload.unit}</span>}
+                      {typeof extractedPayload.primaryValue === "number"
+                        ? extractedPayload.primaryValue.toLocaleString()
+                        : extractedPayload.primaryValue}
+                    </div>
+
+                    {extractedPayload.widgetTitle && (
+                      <p className="text-sm text-muted-foreground">{extractedPayload.widgetTitle}</p>
+                    )}
+
                     {extractedPayload.trend !== undefined && (
                       <span className={`text-sm font-medium ${extractedPayload.trend >= 0 ? "text-success" : "text-destructive"}`}>
-                        {extractedPayload.trend >= 0 ? "↑" : "↓"} {Math.abs(extractedPayload.trend)}%
+                        {extractedPayload.trend >= 0 ? "+" : ""}{extractedPayload.trend}%
                       </span>
                     )}
-                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="px-2 py-0.5 bg-muted/50 rounded-full">{VIZ_TYPES.find(v => v.type === vizType)?.label}</span>
-                      {refreshInterval && <span>⟳ {REFRESH_OPTIONS.find(o => o.value === String(refreshInterval))?.label}</span>}
+
+                    {extractedPayload.series && extractedPayload.series.length > 0 && (
+                      <div className="pt-2 border-t border-border">
+                        <p className="text-micro mb-2">SERIES DATA ({extractedPayload.series.length} points)</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {extractedPayload.series.slice(0, 5).map((s, i) => (
+                            <span key={i} className="px-2 py-1 bg-muted/50 rounded text-xs">
+                              {s.label}: {s.value}
+                            </span>
+                          ))}
+                          {extractedPayload.series.length > 5 && (
+                            <span className="px-2 py-1 text-xs text-muted-foreground">
+                              +{extractedPayload.series.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ====== STEP 3: VISUALIZATION ====== */}
+            {step === 2 && (
+              <div className="grid grid-cols-3 gap-3">
+                {VIZ_TYPES.map((v) => {
+                  const isCompatible = compatibleVizTypes.includes(v.type);
+                  const reason = !isCompatible ? (INCOMPATIBILITY_REASONS[v.type] || "Non compatible") : "";
+
+                  return (
+                    <div key={v.type} className="relative group">
+                      <button
+                        onClick={() => isCompatible && setVizType(v.type)}
+                        disabled={!isCompatible}
+                        className={`w-full p-4 rounded-xl text-center transition-all border ${!isCompatible
+                          ? "opacity-40 cursor-not-allowed bg-muted/10 border-border"
+                          : vizType === v.type
+                            ? "bg-primary/10 border-primary ring-1 ring-primary"
+                            : "bg-muted/30 border-border hover:border-primary/40"
+                          }`}
+                      >
+                        <span className="text-2xl block mb-1">{v.icon}</span>
+                        <span className="text-xs">{v.label}</span>
+                      </button>
+
+                      {/* Tooltip for incompatible types */}
+                      {!isCompatible && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-foreground text-background text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          {reason}
+                        </div>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ====== STEP 4: DISPLAY OPTIONS ====== */}
+            {step === 3 && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-micro block mb-2">UNIT PREFIX</label>
+                    <input
+                      placeholder="$, €"
+                      value={unitPrefix}
+                      onChange={(e) => setUnitPrefix(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-micro block mb-2">UNIT SUFFIX</label>
+                    <input
+                      placeholder="%, k"
+                      value={unitSuffix}
+                      onChange={(e) => setUnitSuffix(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </div>
 
-        {/* Footer navigation */}
-        <div className="p-6 border-t border-border flex items-center gap-3">
-          {step > 0 && (
-            <button
-              onClick={() => { setStep(step - 1); setDrawerError(null); }}
-              className="px-4 py-2.5 border border-border rounded-lg text-body hover:bg-muted transition-all flex items-center gap-2"
-            >
-              <ArrowLeft size={14} /> Back
-            </button>
-          )}
-          <div className="flex-1" />
-          {step < 3 ? (
-            <button
-              onClick={() => { setStep(step + 1); setDrawerError(null); }}
-              disabled={!canGoNext()}
-              className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next <ArrowRight size={14} />
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : null}
-              {saving ? "Adding..." : "Add to Dashboard"}
-            </button>
-          )}
+                <div>
+                  <label className="text-micro block mb-2">DECIMAL PLACES</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setDecimalPlaces(Math.max(0, decimalPlaces - 1))}
+                      className="w-10 h-10 bg-muted/50 border border-border rounded-lg flex items-center justify-center text-foreground hover:bg-muted transition-all"
+                    >
+                      −
+                    </button>
+                    <span className="text-lg font-bold w-8 text-center">{decimalPlaces}</span>
+                    <button
+                      onClick={() => setDecimalPlaces(Math.min(4, decimalPlaces + 1))}
+                      className="w-10 h-10 bg-muted/50 border border-border rounded-lg flex items-center justify-center text-foreground hover:bg-muted transition-all"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-micro block mb-2">REFRESH INTERVAL</label>
+                  <select
+                    value={refreshInterval ?? ""}
+                    onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  >
+                    {REFRESH_OPTIONS.map((o) => {
+                      const minInt = TIER_LIMITS[tier || 'free'].minRefreshInterval;
+                      const isDisabled = o.value !== "" && (minInt === null || Number(o.value) < minInt);
+                      return (
+                        <option key={o.value} value={o.value} disabled={isDisabled}>
+                          {o.label} {isDisabled ? "(Pro only)" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {(tier === 'free' || !tier) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="text-[10px] text-pg-primary mt-1 hover:underline"
+                    >
+                      Débloquer le rafraîchissement automatique →
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-micro block mb-2">COLOR PALETTE</label>
+                  <div className="flex gap-2">
+                    {COLOR_SWATCHES.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setColorPalette(color)}
+                        className={`w-9 h-9 rounded-full transition-all hover:scale-110 ${colorPalette === color ? "ring-2 ring-foreground/50 scale-110" : ""
+                          }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Live preview */}
+                {extractedPayload && vizType && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Eye size={14} className="text-muted-foreground" />
+                      <label className="text-micro">LIVE PREVIEW</label>
+                    </div>
+                    <div className="p-5 bg-muted/20 border border-border rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">{title || "Widget"}</p>
+                      <p className="text-3xl font-bold" style={{ color: colorPalette }}>
+                        {formatValue(extractedPayload.primaryValue)}
+                      </p>
+                      {extractedPayload.trend !== undefined && (
+                        <span className={`text-sm font-medium ${extractedPayload.trend >= 0 ? "text-success" : "text-destructive"}`}>
+                          {extractedPayload.trend >= 0 ? "↑" : "↓"} {Math.abs(extractedPayload.trend)}%
+                        </span>
+                      )}
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="px-2 py-0.5 bg-muted/50 rounded-full">{VIZ_TYPES.find(v => v.type === vizType)?.label}</span>
+                        {refreshInterval && <span>⟳ {REFRESH_OPTIONS.find(o => o.value === String(refreshInterval))?.label}</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Footer navigation */}
+          <div className="p-6 border-t border-border flex items-center gap-3">
+            {step > 0 && (
+              <button
+                onClick={() => { setStep(step - 1); setDrawerError(null); }}
+                className="px-4 py-2.5 border border-border rounded-lg text-body hover:bg-muted transition-all flex items-center gap-2"
+              >
+                <ArrowLeft size={14} /> Back
+              </button>
+            )}
+            <div className="flex-1" />
+            {step < 3 ? (
+              <button
+                onClick={() => { setStep(step + 1); setDrawerError(null); }}
+                disabled={!canGoNext()}
+                className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+                {saving ? "Adding..." : "Add to Dashboard"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -868,7 +956,28 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded }: A
         title="Rafraîchissement Automatique"
         description="Le rafraîchissement automatique est une fonctionnalité Premium. Passez à Pro pour des mises à jour toutes les 30 secondes."
       />
-    </div>
+
+      {/* Refactor Modal */}
+      <AlertDialog open={showRefactorModal} onOpenChange={setShowRefactorModal}>
+        <AlertDialogContent className="bg-card w-[90vw] max-w-md rounded-xl border border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Large Payload Detected</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground text-sm">
+              The API returned a very large JSON payload which exceeds the AI token limits.
+              Would you like to automatically refactor the data (keep only last 6 months or max 200 items) so you can proceed with extraction?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex gap-3">
+            <AlertDialogCancel onClick={handleDeclineRefactor} className="bg-transparent border border-muted hover:bg-muted text-foreground">
+              Decline (May fail)
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleAcceptRefactor} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              Yes, Refactor Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

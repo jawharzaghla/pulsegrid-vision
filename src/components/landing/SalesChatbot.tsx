@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Minus, Sparkles, HelpCircle, Briefcase, Zap } from "lucide-react";
 import { callSalesChatbot } from "@/services/groq.service";
+import { TypewriterText } from "@/components/ui/TypewriterText";
 
 interface Message {
     role: "user" | "assistant";
@@ -83,7 +84,15 @@ const SalesChatbot = () => {
                                         ? "bg-primary text-primary-foreground rounded-tr-none"
                                         : "bg-muted text-foreground rounded-tl-none"
                                     }`}>
-                                    {m.content}
+                                    {m.role === "user" ? (
+                                        m.content
+                                    ) : (
+                                        <TypewriterText
+                                            text={m.content}
+                                            speed={20}
+                                            delay={i === 0 ? 500 : 0}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         ))}

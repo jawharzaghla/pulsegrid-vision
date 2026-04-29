@@ -167,4 +167,35 @@
   .animate-float-delayed-2 {
     animation: float 3s ease-in-out 2s infinite;
   }
+
+  /* React Grid Layout Custom Overrides */
+  .react-grid-item.react-grid-placeholder {
+    background: hsl(var(--primary) / 0.15) !important;
+    border: 2px dashed hsl(var(--primary)) !important;
+    border-radius: var(--radius);
+    opacity: 1 !important;
+    transition-duration: 100ms;
+    z-index: 2;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Custom grid background lines toggle */
+  .react-grid-layout.show-grid {
+    background-size: calc(100% / 12) 110px; /* Adjust 110px closely to rowHeight + margin */
+    background-image: 
+      linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-position: -1px -1px;
+    border-top: 1px dashed hsl(var(--border) / 0.3);
+    border-left: 1px dashed hsl(var(--border) / 0.3);
+    border-radius: 8px;
+  }
+
+  /* PDF export mode — hides interactive elements for clean capture */
+  .pdf-export-mode .react-grid-item > div > div:first-child button,
+  .pdf-export-mode .react-grid-item .react-resizable-handle,
+  .pdf-export-mode [data-pdf-hide] {
+    display: none !important;
+  }
 }

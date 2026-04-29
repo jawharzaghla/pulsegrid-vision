@@ -24,11 +24,11 @@ PulseGrid is a **SaaS Business Intelligence platform** for multi-business operat
 | Frontend Framework | Angular (latest stable) |
 | Styling | Tailwind CSS — utility-first, no custom CSS files |
 | Charting | ApexCharts |
-| AI Engine | Groq API — model: `llama-3.3-70b-versatile` |
+| AI Engine | OpenRouter API — model: `openrouter/auto` (auto-selects best model) |
 | Data Fetching | REST (browser-to-API direct, no backend proxy for data) |
 | Credential Storage | Web Crypto API — AES-GCM 256-bit encrypted localStorage |
 | Auth | JWT with refresh token rotation |
-| Auth Backend | Thin Node/Express service or Supabase (user accounts + Groq key proxy only) |
+| Auth Backend | Thin Node/Express service (user accounts + OpenRouter key proxy only) |
 | Markup | HTML5 semantic elements |
 | State Management | Angular Signals (preferred) or NgRx for complex global state |
 
@@ -158,9 +158,9 @@ generateSalt(): Uint8Array
 - Store decrypted API keys in localStorage
 - Log decrypted keys anywhere
 
-### 5.2 Groq API Key
+### 5.2 OpenRouter API Key
 
-The Groq API key is a **platform-level secret**. It lives in the auth backend's environment variables only. It is never sent to the client. All AI analysis requests are proxied:
+The OpenRouter API key is a **platform-level secret**. It lives in the auth backend's environment variables only. It is never sent to the client. All AI analysis requests are proxied:
 
 ```
 POST /api/ai/analyze
@@ -168,7 +168,7 @@ Authorization: Bearer <user JWT>
 Body: { widgetData: CleanedMetricPayload[], mode: AnalysisMode }
 ```
 
-The backend validates the JWT, enforces rate limits by tier, then calls Groq. The user never sees the Groq key.
+The backend validates the JWT, enforces rate limits by tier, then calls OpenRouter. The user never sees the API key.
 
 ### 5.3 XSS Protection
 
@@ -311,16 +311,15 @@ fetchWidgetData(widget: Widget, decryptionKey: CryptoKey): Observable<CleanedMet
 
 Widget data is fetched in parallel on dashboard load using `forkJoin`. One failure must not block the others.
 
-### 7.2 `groq.service.ts`
+### 7.2 `groq.service.ts` (OpenRouter proxy)
 
 Responsibilities:
 - Accept an `AnalysisRequest`
 - POST it to the PulseGrid backend proxy endpoint
-- Stream the response if Groq streaming is enabled (SSE)
 - Return the analysis as a markdown string
 - Handle 429 rate limit errors gracefully with a user-facing upgrade prompt
 
-Never call the Groq API directly from the browser.
+Never call the OpenRouter API directly from the browser.
 
 ### 7.3 `storage.service.ts`
 
@@ -347,11 +346,12 @@ This is the exact sequence on dashboard load:
 
 1. `dashboard-canvas.component` receives the active `Project` from the route resolver
 2. Component calls `api-fetch.service.fetchAllWidgets(project.widgets, decryptionKey)`
-3. Service uses `forkJoin` to fire all widget fetches in parallel
+3. Service uses `forkJoin` (or `Promise.allSettled` in React) to fire all widget fetches in parallel
 4. Each fetch: decrypt credentials → build HTTP request → call endpoint → extract values via data mapping → return `CleanedMetricPayload`
-5. Each payload is passed to the corresponding `widget-shell.component` via `@Input()`
-6. `widget-shell` selects and renders the correct visualization component based on `widget.visualization`
-7. If a refresh interval is set, a timer (`interval()`) re-triggers the fetch cycle for that widget only
+   - *Optimization:* For AI-extracted widgets, the service first checks a 5-minute `localStorage` cache to prevent excessive Groq API calls. If the API payload is exceptionally large (>24k chars), it undergoes an automatic deep-array truncation (`json-refactor.ts`) prior to AI processing.
+5. Each payload is passed to the corresponding component
+6. Component selects and renders the correct visualization component based on `widget.visualization` (ensure these are wrapped in `React.memo` to prevent re-renders on layout adjustments)
+7. If a refresh interval is set, a timer re-triggers the fetch cycle for that widget only
 
 ---
 
@@ -360,8 +360,8 @@ This is the exact sequence on dashboard load:
 1. User clicks "AI Brief" on the dashboard
 2. `ai-analysis-panel.component` collects all `CleanedMetricPayload` objects currently loaded in memory
 3. Raw API response data is never included — only the mapped, normalized metric values
-4. `groq.service.analyze(request)` POSTs to `/api/ai/analyze` with the user's JWT
-5. Backend validates JWT, checks rate limit, calls Groq with the system prompt + data
+4. `groq.service.analyze(request)` POSTs to `/api/ai/analyze` with the user's JWT (proxied to OpenRouter)
+5. Backend validates JWT, checks rate limit, calls OpenRouter with the system prompt + data
 6. Response streams back and renders as markdown in the panel
 
 **System prompt (backend-defined) includes:** widget titles, metric names, units, time context, instruction to return structured markdown with Summary, Insights, and Anomalies sections.
@@ -504,6 +504,7 @@ All errors are handled at the service level before reaching the component. Compo
 | `FETCH_NETWORK_ERROR` | No connection | Error state inside widget card |
 | `AI_RATE_LIMITED` | User hit daily AI limit | Upgrade prompt modal |
 | `AI_UNAVAILABLE` | Groq service down | Toast notification |
+| `AI_PAYLOAD_TOO_LARGE` | API returned massive JSON (>25k chars) on widget creation | Auto-refactor popup (truncates to past 6 months or max 200 items) |
 
 Each widget keeps its last successfully fetched data visible while showing an error indicator. Errors in one widget never affect others.
 
@@ -523,7 +524,7 @@ The UI shell was generated in Lovable with Angular + Tailwind. It includes:
 - Implement the Web Crypto encryption layer (Section 5)
 - Implement JWT auth with interceptor and guard
 - Connect the Groq AI panel to real data
-- Add drag-and-drop layout persistence
+- Add drag-and-drop layout persistence (must include a debounce timer, e.g., 1000ms, to prevent Firebase quota exhaustion during drag interactions)
 - Enforce tier limits in the UI (Section 11)
 - Add all error and loading states (Section 14)
 
@@ -576,7 +577,7 @@ Work in this exact sequence. Do not jump phases.
 
 - **Never call external APIs directly from a component** — always go through a service
 - **Never store plaintext API keys** in localStorage, sessionStorage, or any persistent store
-- **Never call Groq directly from the browser** — always proxy through the backend
+- **Never call OpenRouter directly from the browser** — always proxy through the backend
 - **Never use `any` type** — TypeScript strict mode is on
 - **Never bypass Angular's XSS protection** without explicit approval
 - **Never add new dependencies** without stating the reason and waiting for confirmation

@@ -3,7 +3,9 @@ import { X, Sparkles, Send, RefreshCw, Copy, Loader2, FileText, MessageSquare, B
 import { analyzeWithAI, buildAnalysisRequest, AIError } from "@/services/groq.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { TypewriterText } from "@/components/ui/TypewriterText";
 import type { AnalysisMode, CleanedMetricPayload } from "@/types/models";
+import ReactMarkdown from "react-markdown";
 
 interface AIPanelProps {
   projectId: string;
@@ -38,6 +40,14 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
+  useEffect(() => {
+    // Auto-generate project brief on initial open
+    if (!analysisContent["project-brief"] && !loading["project-brief"]) {
+      handleAnalyze("project-brief");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleAnalyze = async (mode: AnalysisMode) => {
     setLoading((prev) => ({ ...prev, [mode]: true }));
     setError(null);
@@ -49,8 +59,10 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
       if (err instanceof AIError && err.code === 'RATE_LIMITED') {
         setError(err.message);
         setShowUpgradeModal(true);
+      } else if (err instanceof AIError) {
+        setError(err.message);
       } else {
-        setError('AI service is currently unavailable. Please try again later.');
+        setError('AI service is currently unavailable. Please check your backend proxy and try again.');
       }
     } finally {
       setLoading((prev) => ({ ...prev, [mode]: false }));
@@ -67,8 +79,11 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
       const request = buildAnalysisRequest(projectId, "ask", widgetPayloads, q);
       const response = await analyzeWithAI(request);
       setChatMessages((prev) => [...prev, { role: "ai", content: response.content }]);
-    } catch {
-      setChatMessages((prev) => [...prev, { role: "ai", content: "AI service is currently unavailable. Please try again later." }]);
+    } catch (err) {
+      const message = err instanceof AIError
+        ? err.message
+        : 'AI service is currently unavailable. Please check your backend proxy and try again.';
+      setChatMessages((prev) => [...prev, { role: 'ai', content: message }]);
     }
   };
 
@@ -135,7 +150,15 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
                     ? "bg-primary text-primary-foreground rounded-br-md"
                     : "bg-muted/50 text-foreground rounded-bl-md border border-border"
                     }`}>
-                    {msg.content}
+                    {msg.role === "user" ? (
+                      msg.content
+                    ) : (
+                      <TypewriterText
+                        text={msg.content}
+                        speed={25}
+                        delay={0}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -166,7 +189,9 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
 
               {currentContent && !isLoading && (
                 <div>
-                  <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">{currentContent}</div>
+                  <div className="prose prose-invert prose-sm max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-4 prose-ul:space-y-3 prose-li:my-1 prose-strong:text-foreground prose-strong:font-semibold tracking-wide">
+                    <ReactMarkdown>{currentContent}</ReactMarkdown>
+                  </div>
                   <div className="flex items-center gap-3 mt-6 pt-4 border-t border-border">
                     <button
                       onClick={() => handleAnalyze(activeTab)}

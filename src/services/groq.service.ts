@@ -15,10 +15,38 @@ export interface AIResponse {
 }
 
 /**
+ * Helper to fetch with exponential backoff retries.
+ */
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 2, delayMs = 1000): Promise<Response> {
+    let lastError: any;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout per attempt
+            
+            const res = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timeoutId);
+            
+            if (res.ok || res.status < 500) {
+                return res; // Success or client error (to be handled by caller)
+            }
+            lastError = new Error(`Server returned ${res.status}`);
+        } catch (error) {
+            lastError = error;
+        }
+        
+        if (attempt < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, delayMs * Math.pow(2, attempt)));
+        }
+    }
+    throw lastError;
+}
+
+/**
  * Send an analysis request to the Groq backend proxy.
  */
 export async function analyzeWithAI(request: AnalysisRequest): Promise<AIResponse> {
-    const res = await fetch(`${API_BASE}/ai/analyze`, {
+    const res = await fetchWithRetry(`${API_BASE}/ai/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
@@ -29,7 +57,14 @@ export async function analyzeWithAI(request: AnalysisRequest): Promise<AIRespons
     }
 
     if (!res.ok) {
-        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}`);
+        let details = '';
+        try {
+            const text = await res.text();
+            details = text ? `: ${text}` : '';
+        } catch {
+            details = '';
+        }
+        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}${details}`);
     }
 
     return res.json();
@@ -42,14 +77,21 @@ export async function callSalesChatbot(
     message: string,
     history: { role: 'user' | 'assistant'; content: string }[] = []
 ): Promise<AIResponse> {
-    const res = await fetch(`${API_BASE}/ai/sales`, {
+    const res = await fetchWithRetry(`${API_BASE}/ai/sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, history }),
     });
 
     if (!res.ok) {
-        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}`);
+        let details = '';
+        try {
+            const text = await res.text();
+            details = text ? `: ${text}` : '';
+        } catch {
+            details = '';
+        }
+        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}${details}`);
     }
 
     return res.json();
@@ -64,7 +106,7 @@ export async function extractWithAI(
     rawJson: unknown,
     description: string
 ): Promise<CleanedMetricPayload> {
-    const res = await fetch(`${API_BASE}/ai/extract`, {
+    const res = await fetchWithRetry(`${API_BASE}/ai/extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rawJson, description }),

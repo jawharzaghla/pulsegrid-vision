@@ -6,6 +6,8 @@
 
 import { decrypt } from './crypto.service';
 import { extractWithAI } from './groq.service';
+import { updateWidgetCache } from './firestore.service';
+import { isJsonLarge, refactorLargeJson } from '@/lib/json-refactor';
 import type { Widget, CleanedMetricPayload, WidgetError, WidgetErrorCode } from '@/types/models';
 
 const FETCH_TIMEOUT_MS = 15_000;
@@ -28,7 +30,6 @@ export async function buildAuthHeaders(
 
     if (authMethod === 'none') return headers;
 
-    // If we need decryption but don't have the key, fall back to raw credential keys
     const canDecrypt = isEncrypted && !!cryptoKey;
 
     switch (authMethod) {
@@ -158,59 +159,89 @@ export async function testConnection(
 
 /**
  * Fetch data for a single widget, applying data mapping to return CleanedMetricPayload.
- * Supports AI-extracted widgets via __ai_extracted__ sentinel.
+ * For AI-extracted widgets: returns Firestore-cached payload if available.
+ * Only calls Groq when forceAI=true (explicit user action).
  */
 export async function fetchWidgetData(
     widget: Widget,
-    cryptoKey: CryptoKey | null
+    cryptoKey: CryptoKey | null,
+    forceAI: boolean = false
 ): Promise<CleanedMetricPayload> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
-        console.log('[fetchWidgetData] Widget:', widget.title, 'authMethod:', widget.authMethod, 'authConfig keys:', Object.keys(widget.authConfig));
-        const headers = await buildAuthHeaders(
-            widget.authMethod,
-            widget.authConfig,
-            cryptoKey,
-            true // credentials are encrypted in persisted widgets
-        );
-        console.log('[fetchWidgetData] Headers built:', Object.keys(headers));
+        // AI-extracted widgets: use cached payload from Firestore unless forced
+        if (widget.dataMapping.primaryValuePath === '__ai_extracted__' && widget.dataMapping.aiDescription) {
 
-        const response = await fetch(widget.endpointUrl, {
-            headers,
-            signal: controller.signal,
-        });
+            // Return Firestore cached payload on normal load (no Groq call)
+            if (!forceAI && widget.cachedPayload) {
+                console.log(`[fetchWidgetData] Using Firestore-cached AI payload for "${widget.title}" (cached at ${widget.cachedAt})`);
+                return widget.cachedPayload;
+            }
 
-        console.log('[fetchWidgetData] Response status:', response.status);
+            // If forced or no cache: fetch fresh API data and run AI extraction
+            console.log(`[fetchWidgetData] ${forceAI ? 'Force re-extracting' : 'No cache, extracting'} AI data for "${widget.title}"`);
+
+            const headers = await buildAuthHeaders(widget.authMethod, widget.authConfig, cryptoKey, true);
+            const response = await fetch(widget.endpointUrl, { headers, signal: controller.signal });
+
+            if (response.status === 401 || response.status === 403) {
+                throw createWidgetError('FETCH_AUTH_FAILED', 'Authentication failed. Please re-configure your API credentials.', widget.id);
+            }
+            if (!response.ok) {
+                throw createWidgetError('FETCH_NETWORK_ERROR', `Request failed with status ${response.status}`, widget.id);
+            }
+
+            let data: unknown;
+            try { data = await response.json(); } catch {
+                throw createWidgetError('FETCH_PARSE_ERROR', 'Response is not valid JSON.', widget.id);
+            }
+
+            let payloadToExtract = data;
+            if (isJsonLarge(payloadToExtract)) {
+                console.log(`[fetchWidgetData] Large JSON detected for "${widget.title}", applying auto-refactor...`);
+                const { refactoredData } = refactorLargeJson(payloadToExtract);
+                payloadToExtract = refactoredData;
+            }
+
+            const extractedPayload = await extractWithAI(payloadToExtract, widget.dataMapping.aiDescription);
+
+            // Persist to Firestore in background (fire-and-forget)
+            updateWidgetCache(widget.projectId, widget.id, extractedPayload).catch((err) => {
+                console.warn('[fetchWidgetData] Failed to persist AI cache to Firestore:', err);
+            });
+
+            return extractedPayload;
+        }
+
+        // Standard (non-AI) widgets: always fetch fresh data
+        console.log('[fetchWidgetData] Widget:', widget.title, 'authMethod:', widget.authMethod);
+        const headers = await buildAuthHeaders(widget.authMethod, widget.authConfig, cryptoKey, true);
+
+        const response = await fetch(widget.endpointUrl, { headers, signal: controller.signal });
 
         if (response.status === 401 || response.status === 403) {
             throw createWidgetError('FETCH_AUTH_FAILED', 'Authentication failed. Please re-configure your API credentials.', widget.id);
         }
-
         if (!response.ok) {
             throw createWidgetError('FETCH_NETWORK_ERROR', `Request failed with status ${response.status}`, widget.id);
         }
 
         let data: unknown;
-        try {
-            data = await response.json();
-        } catch {
+        try { data = await response.json(); } catch {
             throw createWidgetError('FETCH_PARSE_ERROR', 'Response is not valid JSON.', widget.id);
         }
 
-        // AI-extracted widgets: send raw response through Groq extraction
-        if (widget.dataMapping.primaryValuePath === '__ai_extracted__' && widget.dataMapping.aiDescription) {
-            return await extractWithAI(data, widget.dataMapping.aiDescription);
-        }
-
-        // Standard JSON path extraction
         return extractMetrics(data, widget);
-    } catch (err) {
+    } catch (err: any) {
         if (err instanceof DOMException && err.name === 'AbortError') {
             throw createWidgetError('FETCH_TIMEOUT', 'Request timed out after 15 seconds.', widget.id);
         }
         if (isWidgetError(err)) throw err;
+        if (err instanceof Error && (err.name === 'AIError' || err.name === 'JSONRefactorError')) {
+            throw createWidgetError('FETCH_PARSE_ERROR', err.message, widget.id);
+        }
         throw createWidgetError('FETCH_NETWORK_ERROR', 'Network error. Check your connection.', widget.id);
     } finally {
         clearTimeout(timeout);
@@ -223,13 +254,14 @@ export async function fetchWidgetData(
  */
 export async function fetchAllWidgetData(
     widgets: Widget[],
-    cryptoKey: CryptoKey | null
+    cryptoKey: CryptoKey | null,
+    forceAI: boolean = false
 ): Promise<Map<string, CleanedMetricPayload | WidgetError>> {
     const results = new Map<string, CleanedMetricPayload | WidgetError>();
 
     const promises = widgets.map(async (widget) => {
         try {
-            const data = await fetchWidgetData(widget, cryptoKey);
+            const data = await fetchWidgetData(widget, cryptoKey, forceAI);
             results.set(widget.id, data);
         } catch (err) {
             if (isWidgetError(err)) {

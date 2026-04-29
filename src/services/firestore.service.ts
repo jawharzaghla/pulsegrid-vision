@@ -18,7 +18,7 @@ import {
     type Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Project, ProjectTheme, Widget, LayoutItem } from '@/types/models';
+import type { Project, ProjectTheme, Widget, LayoutItem, CleanedMetricPayload } from '@/types/models';
 
 const PROJECTS_COLLECTION = 'projects';
 
@@ -191,6 +191,34 @@ export async function updateProjectTheme(projectId: string, theme: ProjectTheme)
     const docRef = doc(db, PROJECTS_COLLECTION, projectId);
     await updateDoc(docRef, {
         theme,
+        updatedAt: new Date().toISOString(),
+    });
+}
+
+// =====================
+// WIDGET CACHE
+// =====================
+
+/**
+ * Save an AI extraction payload as cache on a specific widget.
+ * This avoids re-calling Groq on every dashboard load.
+ */
+export async function updateWidgetCache(
+    projectId: string,
+    widgetId: string,
+    payload: CleanedMetricPayload
+): Promise<void> {
+    const project = await getProject(projectId);
+    if (!project) throw new Error('Project not found');
+
+    const updatedWidgets = project.widgets.map((w) =>
+        w.id === widgetId
+            ? { ...w, cachedPayload: payload, cachedAt: new Date().toISOString() }
+            : w
+    );
+    const docRef = doc(db, PROJECTS_COLLECTION, projectId);
+    await updateDoc(docRef, {
+        widgets: updatedWidgets,
         updatedAt: new Date().toISOString(),
     });
 }

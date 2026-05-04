@@ -70,7 +70,7 @@ export default function AdminDashboard() {
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
     const fetchData = async () => {
         try {

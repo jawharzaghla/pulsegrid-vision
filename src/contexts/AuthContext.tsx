@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
     const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 

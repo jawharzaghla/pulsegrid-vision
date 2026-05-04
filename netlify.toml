@@ -6,6 +6,12 @@
   SECRETS_SCAN_ENABLED = "false"
 
 [[redirects]]
+  from = "/api/*"
+  to = ":env_API_SERVER_URL/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

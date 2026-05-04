@@ -6,7 +6,7 @@
 
 import type { AnalysisRequest, AnalysisMode, CleanedMetricPayload } from '@/types/models';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface AIResponse {
     content: string;

@@ -70,19 +70,33 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
-// Auth routes
-app.use('/api/auth', authRouter);
-app.use('/api/admin', adminRouter);
-
 // Request logging middleware
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
+// Auth routes
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
+
 // Root route
 app.get('/', (req, res) => {
     res.send('<h1>PulseGrid AI Proxy</h1><p>Endpoints: POST /api/ai/analyze, POST /api/ai/extract</p>');
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled Server Error:', err);
+    res.status(500).json({ error: 'SERVER_ERROR', message: err.message });
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 // =====================

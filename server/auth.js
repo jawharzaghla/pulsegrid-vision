@@ -121,13 +121,20 @@ router.post('/admin-token', async (req, res) => {
     }
 
     try {
+        console.log('--- Admin Token Exchange Start ---');
+        console.log('Verifying Firebase ID Token...');
         const decodedToken = await admin.auth().verifyIdToken(firebaseIdToken);
         const adminEmail = process.env.ADMIN_EMAIL;
 
+        console.log('Token verified for:', decodedToken.email);
+        console.log('Expected admin email:', adminEmail);
+
         if (decodedToken.email !== adminEmail) {
+            console.warn('Access Denied: Email mismatch');
             return res.status(403).json({ error: 'NOT_ADMIN' });
         }
 
+        console.log('Generating admin JWT...');
         const adminToken = jwt.sign(
             {
                 id: decodedToken.uid,
@@ -143,10 +150,11 @@ router.post('/admin-token', async (req, res) => {
         const ip = req.headers['x-forwarded-for'] || req.ip;
         logSession(decodedToken.uid, decodedToken.email, ip);
 
+        console.log('Admin token exchange successful');
         res.json({ accessToken: adminToken });
     } catch (err) {
         console.error('Admin token error:', err);
-        res.status(401).json({ error: 'INVALID_TOKEN' });
+        res.status(401).json({ error: 'INVALID_TOKEN', message: err.message });
     }
 });
 

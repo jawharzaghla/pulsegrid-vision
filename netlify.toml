@@ -7,7 +7,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = ":env_API_SERVER_URL/:splat"
+  to = "https://pulsegrid-vision-1.onrender.com/api/:splat"
   status = 200
   force = true
 

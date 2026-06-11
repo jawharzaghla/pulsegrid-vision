@@ -1,0 +1,82 @@
+@startuml Diagramme d'Architecture Générale - PulseGrid
+
+title Diagramme d'Architecture Générale PulseGrid
+
+' Style identique aux diagrammes précédents
+skinparam backgroundColor white
+skinparam actorBackgroundColor white
+skinparam actorBorderColor black
+skinparam componentBackgroundColor white
+skinparam componentBorderColor black
+skinparam interfaceBackgroundColor white
+skinparam interfaceBorderColor black
+skinparam arrowColor black
+skinparam noteBackgroundColor white
+skinparam noteBorderColor black
+skinparam actorFontColor black
+skinparam componentFontColor black
+skinparam noteFontColor black
+skinparam linetype ortho
+skinparam scale 0.8
+skinparam shadowing false
+skinparam packageBackgroundColor white
+skinparam packageBorderColor black
+skinparam nodeBackgroundColor white
+skinparam nodeBorderColor black
+skinparam databaseBackgroundColor white
+skinparam databaseBorderColor black
+skinparam cloudBackgroundColor white
+skinparam cloudBorderColor black
+
+package "Client (Navigateur Web)" {
+    component "Interface Utilisateur\n(React + Tailwind)" as UI
+    component "Gestion d'État\n(React Context / Hooks)" as State
+    
+    package "Services Coeur" {
+        component "AuthService\n(Firebase + JWT)" as Auth
+        component "CryptoService\n(Web Crypto API)" as Crypto
+        component "ApiFetchService\n(REST Client)" as Fetch
+        component "FirestoreService\n(NoSQL Sync)" as FirestoreSvc
+    }
+    
+    database "LocalStorage\n(Chiffré)" as LS
+}
+
+node "Serveur Backend\n(Node.js / Express)" {
+    component "AI Proxy Service" as AIProxy
+    component "JWT Middleware" as JWTMidd
+}
+
+cloud "Services Externes" {
+    database "Firebase Cloud" as FB {
+        [Auth]
+        [Firestore DB]
+    }
+    
+    [OpenRouter / Groq API] as OpenRouter
+    [APIs Tierces\n(Stripe, Shopify, etc.)] as ThirdParty
+}
+
+' Relations
+UI --> State
+State --> Auth
+State --> Fetch
+State --> FirestoreSvc
+
+Auth --> FB : Authentification
+FirestoreSvc --> FB : Persistance des données
+
+Fetch --> Crypto : Déchiffre les clés
+Fetch --> ThirdParty : Appels Data REST (Direct Browser-to-API)
+
+State --> AIProxy : Demandes d'analyse IA
+JWTMidd - AIProxy
+AIProxy --> OpenRouter : Requêtes LLM (Secret Key)
+
+Crypto <-> LS : Chiffrement / Déchiffrement
+
+note bottom of Crypto : Chiffrement client-side (AES-GCM)\ndes identifiants tiers avant stockage.
+
+note right of AIProxy : Masque les clés API LLM\net gère les quotas par tiers de service.
+
+@enduml

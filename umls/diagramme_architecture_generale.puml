@@ -1,0 +1,98 @@
+@startuml Diagramme d'Architecture Générale - PulseGrid
+
+title Diagramme d'Architecture Générale PulseGrid
+
+' Style et Spacement
+skinparam linetype ortho
+skinparam nodesep 100
+skinparam ranksep 80
+skinparam shadowing false
+skinparam roundcorner 5
+skinparam packageStyle rectangle
+
+skinparam backgroundColor white
+skinparam arrowColor black
+skinparam componentBackgroundColor white
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor white
+skinparam databaseBorderColor black
+skinparam cloud {
+    BackgroundColor #F8F9FA
+    BorderColor #ADB5BD
+    BorderThickness 1
+}
+
+skinparam node {
+    BackgroundColor #F1F3F5
+    BorderColor #343A40
+}
+
+skinparam note {
+    BackgroundColor #FFF9DB
+    BorderColor #FAB005
+    FontSize 11
+}
+
+package "Client (Navigateur Web)" as Client {
+    component "Interface Utilisateur\n(React + Tailwind)" as UI
+    
+    together {
+        component "Gestion d'État\n(React Context / Hooks)" as State
+        database "LocalStorage\n(Chiffré)" as LS
+    }
+    
+    package "Services Coeur" as CoreServices {
+        together {
+            component "AuthService" as Auth
+            component "FirestoreService" as FirestoreSvc
+            component "ApiFetchService" as Fetch
+            component "CryptoService" as Crypto
+        }
+    }
+}
+
+node "Serveur Backend\n(Node.js / Express)" as Backend {
+    component "AI Proxy Service" as AIProxy
+    component "JWT Middleware" as JWTMidd
+    JWTMidd -[hidden]down- AIProxy
+}
+
+cloud "Services Externes" as Externals {
+    together {
+        database "Firebase Cloud" as FB {
+            [Auth System] as FBAuth
+            [Firestore DB] as FBDB
+        }
+        [APIs Tierces] as ThirdParty
+        [OpenRouter API] as OpenRouter
+    }
+}
+
+' --- Relations (Direct & Straight) ---
+
+UI -down-> State
+State -down-> CoreServices
+
+' Horizontal Alignments
+State -right-> LS : Chiffre
+Crypto -left-> LS : Accès
+
+' Vertical Flow (Directly aligned)
+Auth -down-> FBAuth : Auth
+FirestoreSvc -down-> FBDB : Sync
+Fetch -down-> ThirdParty : Data
+AIProxy -down-> OpenRouter : LLM
+
+' Side-to-Side
+State -right-> AIProxy : Analyse IA
+Fetch -left-> Crypto : Clés
+
+' Notes
+note bottom of Crypto : AES-GCM Encryption
+note right of AIProxy : Key Masking & Quotas
+
+' Force layout structure
+Client -[hidden]down- Backend
+Backend -[hidden]down- Externals
+
+@enduml

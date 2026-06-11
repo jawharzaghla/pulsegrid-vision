@@ -1,0 +1,63 @@
+@startuml Diagramme de Séquence - Ajout de Widget
+
+title Diagramme de Séquence : Flux d'Ajout de Widget (Extraction IA)
+
+' Style cohérent avec les diagrammes précédents
+skinparam backgroundColor white
+skinparam actorBackgroundColor white
+skinparam actorBorderColor black
+skinparam participantBackgroundColor white
+skinparam participantBorderColor black
+skinparam arrowColor black
+skinparam noteBackgroundColor white
+skinparam noteBorderColor black
+skinparam actorFontColor black
+skinparam participantFontColor black
+skinparam noteFontColor black
+skinparam linetype ortho
+skinparam scale 0.8
+skinparam shadowing false
+skinparam databaseBackgroundColor white
+skinparam databaseBorderColor black
+skinparam collectionsBackgroundColor white
+skinparam collectionsBorderColor black
+
+actor "Utilisateur" as User
+participant "Navigateur\n(App React)" as App
+participant "Service API Tiers\n(Stripe, Shopify, etc.)" as ThirdParty
+participant "Backend PulseGrid\n(Proxy IA)" as Backend
+participant "OpenRouter\n(LLM)" as AI
+database "Base de Données\n(Firestore / Storage)" as DB
+
+== Phase 1 : Test de Connexion & Récupération ==
+
+User -> App : Saisit l'URL et les Identifiants
+App -> ThirdParty : Requête de test (HTTP GET/POST)
+ThirdParty --> App : Réponse JSON brute (Payload complet)
+
+== Phase 2 : Analyse & Extraction IA ==
+
+App -> Backend : POST /api/ai/extract\n(JSON brut + Prompt contextuel)
+note right of App : Le JSON est tronqué si > 25k chars\npour respecter les limites de tokens.
+
+Backend -> Backend : Valide le JWT utilisateur\net vérifie les quotas (Tiers)
+
+Backend -> AI : Demande d'analyse (OpenRouter API)
+AI --> Backend : CleanedMetricPayload (Structure normalisée)
+Backend --> App : Données nettoyées (Valeur, Unité, Série)
+
+== Phase 3 : Configuration du Mapping ==
+
+App -> User : Affiche l'aperçu du Widget & Suggestion de mapping
+User -> App : Valide ou ajuste le mapping
+
+== Phase 4 : Chiffrement & Persistance ==
+
+App -> App : Chiffre les identifiants (AES-GCM 256-bit)
+note left of App : Utilise la clé dérivée du mot de passe\n(Stockée uniquement en mémoire session).
+
+App -> DB : Sauvegarde la config du Widget\n(Inclus Identifiants Chiffrés)
+DB --> App : Succès
+App -> User : Affiche le Widget sur le Dashboard
+
+@enduml

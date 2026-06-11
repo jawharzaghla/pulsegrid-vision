@@ -1,0 +1,152 @@
+@startuml
+' ============================================================
+' Diagramme de Cas d'Utilisation — PulseGrid
+' ============================================================
+
+<style>
+usecaseDiagram {
+  usecase {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontColor #1B5E20
+    FontSize 11
+    RoundCorner 15
+  }
+  actor {
+    FontColor #212121
+    FontSize 11
+  }
+  arrow {
+    LineColor #37474F
+    LineThickness 1.5
+  }
+  note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontColor #E65100
+    FontSize 10
+  }
+  rectangle {
+    BackgroundColor #FAFAFA
+    BorderColor #455A64
+    FontColor #263238
+    FontSize 14
+    FontStyle bold
+    RoundCorner 5
+  }
+}
+</style>
+
+' ── Lignes droites & orientation ──────────────────────────
+left to right direction
+skinparam linetype polyline
+skinparam nodesep 30
+skinparam ranksep 60
+
+' ── Acteurs ───────────────────────────────────────────────
+' Ordonnés strictement de haut en bas pour éviter les croisements
+actor "Administrateur" as Admin
+
+together {
+  actor "Utilisateur\nGratuit" as UserFree
+  actor "Utilisateur\nPro" as UserPro
+  actor "Utilisateur\nBusiness" as UserBiz
+}
+actor "Utilisateur\nAuthentifié" as Auth
+
+actor "Utilisateur\nNon Authentifié" as Guest
+
+actor "Manutentionnaire" as Manut
+
+UserFree --|> Auth
+UserPro --|> Auth
+UserBiz --|> Auth
+
+
+rectangle "Système PulseGrid" {
+
+  ' --- COLONNE 1 : Cas d'utilisation principaux (alignés avec les acteurs) ---
+  together {
+    usecase "Voir le Tableau\nde Bord Admin" as UC_AdminDash
+    usecase "Gérer les Projets" as UC_GestionProjet
+    usecase "Gérer le Compte" as UC_GestionCompte
+    usecase "Voir la Liste\ndes Projets" as UC_ListProjects
+    usecase "S'authentifier\n(email / mot de passe)" as UC_Login
+    usecase "Gérer les demandes\nd'Intervention" as UC_Intervention
+  }
+
+  ' --- COLONNE 2 : Sous-cas ---
+  usecase "Créer un\nNouveau Projet" as UC_CreateProject
+  usecase "Modifier les Paramètres\ndu Projet" as UC_EditProject
+  usecase "Lancer une\nAnalyse IA" as UC_AI
+  usecase "Ajouter un Widget\nau Projet" as UC_AddWidget
+
+  usecase "Voir les Paramètres\ndu Compte" as UC_ViewAccount
+  usecase "Gérer\néquipements" as UC_ManageAssets
+
+  usecase "Ajouter\nune demande" as UC_AddRequest
+  usecase "Modifier\nune demande" as UC_EditRequest
+  usecase "Supprimer\nune demande" as UC_DeleteRequest
+
+  ' --- COLONNE 3 : Cas terminaux ---
+  usecase "Configurer\nle Widget" as UC_ConfigWidget
+  usecase "Actualiser les\nDonnées du Widget" as UC_UpdateWidget
+  usecase "Mettre à Niveau\nl'Abonnement" as UC_Upgrade
+
+}
+
+' ── Associations Acteurs → Cas principaux (Aucun croisement) ──
+Admin --> UC_AdminDash
+
+Auth --> UC_AdminDash
+Auth --> UC_GestionProjet
+Auth --> UC_GestionCompte
+Auth --> UC_ListProjects
+
+Guest --> UC_ListProjects
+Guest --> UC_Login
+
+Manut --> UC_Intervention
+
+' ── Inclusions — Gestion Projets ──────────────────────────
+UC_GestionProjet ..> UC_CreateProject : <<include>>
+UC_GestionProjet ..> UC_EditProject : <<include>>
+UC_GestionProjet ..> UC_AI : <<include>>
+UC_GestionProjet ..> UC_AddWidget : <<include>>
+
+' ── Inclusions — Gestion Compte ───────────────────────────
+UC_GestionCompte ..> UC_ViewAccount : <<include>>
+UC_GestionCompte ..> UC_ManageAssets : <<include>>
+
+' ── Inclusions — Interventions ────────────────────────────
+UC_Intervention ..> UC_AddRequest : <<include>>
+UC_Intervention ..> UC_EditRequest : <<include>>
+UC_Intervention ..> UC_DeleteRequest : <<include>>
+
+' ── Inclusions — Widgets ──────────────────────────────────
+UC_AddWidget ..> UC_ConfigWidget : <<include>>
+UC_ConfigWidget ..> UC_UpdateWidget : <<include>>
+
+' ── Extensions ────────────────────────────────────────────
+' La flèche extend pointe vers le cas de base (<.. au lieu de ..>)
+' Cela force Upgrade à se placer à droite sans croiser les lignes d'inclusion
+UC_AI <.. UC_Upgrade : <<extend>>
+UC_CreateProject <.. UC_Upgrade : <<extend>>
+
+' ── Notes ─────────────────────────────────────────────────
+note right of UC_Login
+  <<include>> : Tous les cas d'utilisation
+  (sauf consultation liste) nécessitent
+  une authentification préalable.
+end note
+
+note bottom of UC_Intervention
+  Regroupe 4 types :
+  • Infrastructure
+  • Parc
+  • Manutention
+  • Informatique
+end note
+
+caption Diagramme de Cas d'Utilisation — PulseGrid
+@enduml

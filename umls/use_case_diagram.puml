@@ -1,73 +1,152 @@
-@startuml Diagramme de Cas d'Utilisation - PulseGrid
+@startuml
+' ============================================================
+' Diagramme de Cas d'Utilisation — PulseGrid
+' ============================================================
 
-title Diagramme de Cas d'Utilisation PulseGrid
+<style>
+usecaseDiagram {
+  usecase {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+    FontColor #1B5E20
+    FontSize 11
+    RoundCorner 15
+  }
+  actor {
+    FontColor #212121
+    FontSize 11
+  }
+  arrow {
+    LineColor #37474F
+    LineThickness 1.5
+  }
+  note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontColor #E65100
+    FontSize 10
+  }
+  rectangle {
+    BackgroundColor #FAFAFA
+    BorderColor #455A64
+    FontColor #263238
+    FontSize 14
+    FontStyle bold
+    RoundCorner 5
+  }
+}
+</style>
 
+' ── Lignes droites & orientation ──────────────────────────
 left to right direction
-
-skinparam backgroundColor white
-skinparam actorBackgroundColor white
-skinparam actorBorderColor black
-skinparam usecaseBackgroundColor white
-skinparam usecaseBorderColor black
-skinparam actorFontColor black
-skinparam usecaseFontColor black
-skinparam linetype ortho
-skinparam scale 0.75
-skinparam usecasePadding 20
-skinparam actorPadding 24
+skinparam linetype polyline
 skinparam shadowing false
-skinparam nodePadding 12
+skinparam monochrome true
+skinparam nodesep 50
+skinparam ranksep 100
 
-actor "Utilisateur Non Authentifié" as Unauth
-actor "Utilisateur Authentifié" as Auth
+' ── Acteurs ───────────────────────────────────────────────
+' Ordonnés strictement de haut en bas pour éviter les croisements
 actor "Administrateur" as Admin
 
-actor "Utilisateur Gratuit" as Free
-actor "Utilisateur Pro" as Pro
-actor "Utilisateur Business" as Business
-Free -|> Auth
-Pro -|> Auth
-Business -|> Auth
+  actor "Utilisateur\nGratuit" as UserFree
+  actor "Utilisateur\nPro" as UserPro
+  actor "Utilisateur\nBusiness" as UserBiz
+  actor "Utilisateur\nAuthentifié" as Auth
 
-usecase "Voir la Page d'Accueil\n(Fonctionnalités, Tarifs, Comment Ça Marche)" as UC1
-usecase "Interagir avec le Chatbot Commercial\n(Support Client Alimenté par IA)" as UC2
-usecase "S'Inscrire\n(Créer un compte avec email/mot de passe)" as UC3
-usecase "Se Connecter\n(S'authentifier avec email/mot de passe)" as UC4
-usecase "Se Déconnecter\n(Terminer la session et effacer les clés crypto)" as UC5
-usecase "Voir la Liste des Projets\n(Parcourir les projets de l'utilisateur)" as UC6
-usecase "Créer un Nouveau Projet\n(Configurer un espace de travail tableau de bord)" as UC7
-usecase "Modifier les Paramètres du Projet\n(Modifier les détails et le thème du projet)" as UC13
-usecase "Voir le Tableau de Bord du Projet\n(Voir les widgets et la disposition)" as UC8
-usecase "Ajouter un Widget au Projet\n(Créer une nouvelle visualisation de données)" as UC9
-usecase "Configurer le Widget\n(Définir l'endpoint API, auth, mapping)" as UC10
-usecase "Actualiser les Données du Widget\n(Récupération manuelle des données)" as UC11
-usecase "Lancer une Analyse IA\n(Obtenir des insights des données des widgets)" as UC12
-usecase "Voir les Paramètres du Compte\n(Gérer le profil et les préférences)" as UC14
-usecase "Mettre à Niveau l'Abonnement\n(Passer de gratuit à pro/entreprise)" as UC15
-usecase "Voir le Tableau de Bord Admin\n(Surveiller le système et les utilisateurs)" as UC16
+actor "Utilisateur\nNon Authentifié" as Guest
 
-Unauth --> UC1
-Unauth --> UC2
-Unauth --> UC3
-Unauth --> UC4
+actor "Manutentionnaire" as Manut
 
-Auth --> UC5
-Auth --> UC6
-Auth --> UC7
-Auth --> UC8
-Auth --> UC9
-Auth --> UC10
-Auth --> UC11
-Auth --> UC12
-Auth --> UC13
-Auth --> UC14
-Auth --> UC15
+UserFree ---|> Auth
+UserPro ---|> Auth
+UserBiz ---|> Auth
 
-Admin --> UC16
 
-UC9 ..> UC10 : <<include>>
-UC10 ..> UC11 : <<include>>
-UC7 ..> UC15 : <<extend>> : limite atteinte
-UC12 ..> UC15 : <<extend>> : quota IA dépassé
+rectangle "Système PulseGrid" {
 
+  ' --- COLONNE 1 : Cas d'utilisation principaux (alignés avec les acteurs) ---
+    usecase "Voir le Tableau\nde Bord Admin" as UC_AdminDash
+    usecase "Gérer les Projets" as UC_GestionProjet
+    usecase "Gérer le Compte" as UC_GestionCompte
+    usecase "Voir la Liste\ndes Projets" as UC_ListProjects
+    usecase "S'authentifier\n(email / mot de passe)" as UC_Login
+    usecase "Gérer les demandes\nd'Intervention" as UC_Intervention
+
+  ' --- COLONNE 2 : Sous-cas ---
+  usecase "Créer un\nNouveau Projet" as UC_CreateProject
+  usecase "Modifier les Paramètres\ndu Projet" as UC_EditProject
+  usecase "Lancer une\nAnalyse IA" as UC_AI
+  usecase "Ajouter un Widget\nau Projet" as UC_AddWidget
+
+  usecase "Voir les Paramètres\ndu Compte" as UC_ViewAccount
+  usecase "Gérer\néquipements" as UC_ManageAssets
+
+  usecase "Ajouter\nune demande" as UC_AddRequest
+  usecase "Modifier\nune demande" as UC_EditRequest
+  usecase "Supprimer\nune demande" as UC_DeleteRequest
+
+  ' --- COLONNE 3 : Cas terminaux ---
+  usecase "Configurer\nle Widget" as UC_ConfigWidget
+  usecase "Actualiser les\nDonnées du Widget" as UC_UpdateWidget
+  usecase "Mettre à Niveau\nl'Abonnement" as UC_Upgrade
+
+  ' --- Notes (Placées en bas à droite) ---
+  note as N_Login
+    <<include>> : Tous les cas d'utilisation
+    (sauf consultation liste) nécessitent
+    une authentification préalable.
+  end note
+
+  note as N_Interv
+    Regroupe 4 types :
+    • Infrastructure
+    • Parc
+    • Manutention
+    • Informatique
+  end note
+
+  ' Alignement forcé en bas à droite
+  UC_DeleteRequest -[hidden]down- N_Login
+  N_Login -[hidden]down- N_Interv
+}
+
+' ── Associations Acteurs → Cas principaux (Aucun croisement) ──
+Admin --> UC_AdminDash
+
+Auth -[hidden]--> UC_GestionProjet
+Auth -[hidden]--> UC_GestionCompte
+Auth -[hidden]right--> UC_ListProjects
+
+' --- Accès Directs (Remplacent les inclusions problématiques) ---
+Auth -[hidden]--> UC_CreateProject
+Auth -[hidden]--> UC_EditProject
+Auth -[hidden]--> UC_AI
+Auth -[hidden]--> UC_AddWidget
+Auth -[hidden]--> UC_DeleteRequest
+
+Guest --> UC_Login
+
+Manut --> UC_Intervention
+
+' ── Inclusions — Gestion Projets (Supprimées car croisement gênant) ──
+
+' ── Inclusions — Gestion Compte ───────────────────────────
+UC_GestionCompte ..> UC_ViewAccount : <<include>>
+UC_GestionCompte ..> UC_ManageAssets : <<include>>
+
+' ── Inclusions — Interventions ────────────────────────────
+UC_Intervention ..> UC_AddRequest : <<include>>
+UC_Intervention ..> UC_EditRequest : <<include>>
+' UC_Intervention ..> UC_DeleteRequest : <<include>> (Supprimée car bendy)
+
+' ── Inclusions — Widgets ──────────────────────────────────
+UC_AddWidget ..> UC_ConfigWidget : <<include>>
+UC_ConfigWidget ..> UC_UpdateWidget : <<include>>
+
+' ── Extensions ────────────────────────────────────────────
+UC_AI <.. UC_Upgrade : <<extend>>
+UC_CreateProject <.. UC_Upgrade : <<extend>>
+
+caption Diagramme de Cas d'Utilisation — PulseGrid
 @enduml

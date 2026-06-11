@@ -1,0 +1,50 @@
+@startuml "Ajout de Widget"
+
+' ---- Visual Configuration & Autonumbering Customization ----
+skinparam style strictuml
+skinparam maxMessageSize 250
+skinparam BoxPadding 10
+skinparam ParticipantPadding 15
+
+title Diagramme de Séquence : Flux d'Ajout de Widget
+
+' ---- Lifeline Declaration (BCE Model Architecture) ----
+actor "Utilisateur" as Utilisateur
+boundary ":InterfaceDashboard" as InterfaceDashboard
+control ":GestionnaireWidget" as GestionnaireWidget
+entity "API:Externe" as APIExterne
+entity "LLM:OpenRouter" as OpenRouter
+entity "bd:Configuration" as bdConfiguration
+
+' ---- Dynamic Interaction Flow ----
+
+Utilisateur -> InterfaceDashboard : 1 saisirConfigWidget(url, identifiants)
+InterfaceDashboard -> GestionnaireWidget : 2 testerConnexion(url, identifiants)
+
+GestionnaireWidget -> APIExterne : 3 executerRequeteGET(url, identifiants)
+
+alt Echec de connexion
+    APIExterne --> GestionnaireWidget : 4 retournerErreurHTTP()
+    GestionnaireWidget --> InterfaceDashboard : 5 retournerErreur()
+else Connexion reussie
+    APIExterne --> GestionnaireWidget : 6 retournerReponseJSON()
+    GestionnaireWidget -> OpenRouter : 7 extraireMetriques(jsonTronque)
+    OpenRouter --> GestionnaireWidget : 8 retournerStructureNormalisee()
+    GestionnaireWidget --> InterfaceDashboard : 9 afficherApercuWidget(structure)
+
+    Utilisateur -> InterfaceDashboard : 10 validerMapping(chemins)
+    InterfaceDashboard -> GestionnaireWidget : 11 sauvegarderWidget(config, identifiants)
+    
+    GestionnaireWidget -> GestionnaireWidget : 12 chiffrerIdentifiants(identifiants)
+    GestionnaireWidget -> bdConfiguration : 13 enregistrer(configWidgetChiffree)
+    
+    alt Erreur de sauvegarde
+        bdConfiguration --> GestionnaireWidget : 14 retournerErreurDB()
+        GestionnaireWidget --> InterfaceDashboard : 15 retournerErreur()
+    else Sauvegarde reussie
+        bdConfiguration --> GestionnaireWidget : 16 confirmerEnregistrement()
+        GestionnaireWidget --> InterfaceDashboard : 17 widgetAjoute()
+    end
+end
+
+@enduml

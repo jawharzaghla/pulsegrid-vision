@@ -1,0 +1,74 @@
+@startuml Diagramme de Flux de Chiffrement - PulseGrid
+
+title Diagramme de Flux de Chiffrement PulseGrid
+
+' Style identique au diagramme de cas d'utilisation
+skinparam backgroundColor white
+skinparam actorBackgroundColor white
+skinparam actorBorderColor black
+skinparam participantBackgroundColor white
+skinparam participantBorderColor black
+skinparam arrowColor black
+skinparam noteBackgroundColor white
+skinparam noteBorderColor black
+skinparam actorFontColor black
+skinparam participantFontColor black
+skinparam noteFontColor black
+skinparam linetype ortho
+skinparam scale 0.8
+skinparam shadowing false
+skinparam collectionsBackgroundColor white
+skinparam collectionsBorderColor black
+skinparam databaseBackgroundColor white
+skinparam databaseBorderColor black
+
+actor "Utilisateur" as User
+participant "Interface UI\n(React/Vite)" as UI
+participant "CryptoService\n(Web Crypto API)" as Crypto
+database "LocalStorage\n(Persistance)" as DB
+participant "Service API\n(Tiers)" as ExternalAPI
+
+== Phase 1 : Initialisation (Inscription) ==
+
+User -> UI : Créer un compte (Mot de passe)
+UI -> Crypto : generateSalt()
+Crypto -> Crypto : crypto.getRandomValues()
+Crypto --> UI : Salt
+UI -> DB : Stocker le Salt (pg_salt)
+note right of DB : Le sel est public et nécessaire\npour dériver la clé plus tard.
+
+== Phase 2 : Dérivation de la Clé (Connexion/Session) ==
+
+User -> UI : Connexion (Mot de passe)
+UI -> DB : Récupérer le Salt
+DB --> UI : Salt
+UI -> Crypto : deriveKey(password, salt)
+Crypto -> Crypto : PBKDF2 (100k itérations, SHA-256)
+Crypto --> UI : CryptoKey (AES-GCM 256-bit)
+note over UI : La clé est conservée uniquement en mémoire vive\net n'est jamais stockée.
+
+== Phase 3 : Chiffrement & Stockage (Ajout de Widget) ==
+
+User -> UI : Configurer Widget (Clé API Stripe, etc.)
+UI -> Crypto : encrypt(apiKey, CryptoKey)
+Crypto -> Crypto : AES-GCM-256
+Crypto --> UI : Ciphertext (Base64)
+UI -> DB : Stocker le Ciphertext (pg_creds)
+
+== Phase 4 : Déchiffrement & Utilisation (Actualisation) ==
+
+UI -> DB : Récupérer le Ciphertext
+DB --> UI : Ciphertext
+UI -> Crypto : decrypt(ciphertext, CryptoKey)
+Crypto --> UI : apiKey (Plaintext)
+UI -> ExternalAPI : Requête HTTP (Header: Authorization)
+ExternalAPI --> UI : Données JSON
+UI -> User : Afficher les Visualisations
+
+== Phase 5 : Sécurisation (Déconnexion) ==
+
+User -> UI : Se déconnecter
+UI -> UI : Effacer la CryptoKey de la mémoire
+note right of UI : Les clés déchiffrées sont "zéro-ées"\net ne persistent pas après la session.
+
+@enduml

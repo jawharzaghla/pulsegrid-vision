@@ -1,0 +1,79 @@
+@startuml Encryption Architecture - PulseGrid
+
+title Client-Side Encryption Architecture (AES-GCM 256-bit)
+
+' Style principles from previous diagrams
+skinparam backgroundColor white
+skinparam actorBackgroundColor white
+skinparam actorBorderColor black
+skinparam participantBackgroundColor white
+skinparam participantBorderColor black
+skinparam arrowColor black
+skinparam noteBackgroundColor white
+skinparam noteBorderColor black
+skinparam actorFontColor black
+skinparam participantFontColor black
+skinparam noteFontColor black
+skinparam linetype ortho
+skinparam shadowing false
+skinparam collectionsBackgroundColor white
+skinparam collectionsBorderColor black
+skinparam databaseBackgroundColor white
+skinparam databaseBorderColor black
+
+actor "User" as User
+participant "UI Layer\n(React/Vite)" as UI
+participant "CryptoService\n(Web Crypto API)" as Crypto
+database "LocalStorage\n(Persistence)" as DB
+participant "Third-Party API" as External
+
+== Phase 1: Initialization (Sign Up) ==
+
+User -> UI : Enter Password
+UI -> Crypto : generateSalt()
+Crypto -> Crypto : crypto.getRandomValues(16)
+Crypto --> UI : Salt (Uint8Array)
+UI -> DB : Store Salt (pg_salt)
+note right of DB : The salt is public and used\nto re-derive the key later.
+
+== Phase 2: Key Derivation (Login / Session Start) ==
+
+User -> UI : Login (Enter Password)
+UI -> DB : Retrieve Salt
+DB --> UI : Salt
+UI -> Crypto : deriveKey(password, salt)
+group PBKDF2 Derivation
+    Crypto -> Crypto : SHA-256 (100,000 iterations)
+end
+Crypto --> UI : CryptoKey (AES-GCM 256-bit)
+note over UI : The key exists ONLY in volatile memory.\nIt is never persisted.
+
+== Phase 3: Encryption & Storage (Add Credential) ==
+
+User -> UI : Add Widget (Enter API Key/Token)
+UI -> Crypto : encrypt(plainText, CryptoKey)
+group AES-GCM-256
+    Crypto -> Crypto : Generate IV
+    Crypto -> Crypto : Encrypt Data
+end
+Crypto --> UI : Ciphertext (Base64 + IV)
+UI -> DB : Store Encrypted Credentials (pg_creds)
+
+== Phase 4: Decryption & Usage (Dashboard Load) ==
+
+UI -> DB : Fetch Ciphertext
+DB --> UI : Ciphertext
+UI -> Crypto : decrypt(ciphertext, CryptoKey)
+Crypto --> UI : Plaintext API Key
+UI -> External : Authenticated Request (HTTPS)
+External --> UI : JSON Data
+UI -> User : Render Visualizations
+
+== Phase 5: Security (Logout / Session End) ==
+
+User -> UI : Logout / Close Tab
+UI -> UI : Zero-out CryptoKey from memory
+note right of UI : Decrypted keys are wiped.\nLocalStorage remains encrypted.
+
+caption PulseGrid - End of Study Report: Security Architecture
+@enduml

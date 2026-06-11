@@ -424,27 +424,28 @@ const Dashboard = () => {
   const hasWidgets = project && project.widgets.length > 0;
 
   return (
-    <div className="p-8 relative">
+    <div className="p-4 md:p-8 relative">
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Link to="/app/projects" className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={20} />
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-xl">{projectEmoji}</span>
-            <h1 className="text-xl font-bold">{projectName}</h1>
-            <span className="w-3 h-3 rounded-full bg-primary" />
+            <h1 className="text-xl font-bold truncate">{projectName}</h1>
+            <span className="w-3 h-3 rounded-full bg-primary shrink-0" />
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
             className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-            <span>Updated {timeAgo()}</span>
+            <span className="hidden sm:inline">Updated {timeAgo()}</span>
+            <span className="sm:hidden">{timeAgo()}</span>
           </button>
           <Link to={`/app/projects/${id}/settings`} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
             <Settings size={18} />
@@ -455,12 +456,15 @@ const Dashboard = () => {
             className="px-3 py-1.5 border border-border hover:border-primary/50 rounded-lg text-body text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 disabled:opacity-50"
           >
             {isExporting ? <RefreshCw size={14} className="animate-spin" /> : <FileDown size={14} />}
-            {isExporting ? "Exporting..." : "Export PDF"}
+            <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export PDF"}</span>
+            {!isExporting && <span className="sm:hidden">PDF</span>}
           </button>
           <button onClick={() => setShowAI(true)} className="px-3 py-1.5 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent rounded-lg text-body font-medium transition-all flex items-center gap-2">
-            <Sparkles size={14} /> AI Brief
+            <Sparkles size={14} /> 
+            <span className="hidden sm:inline">AI Brief</span>
+            <span className="sm:hidden">AI</span>
           </button>
-          <div className="w-px h-6 bg-border mx-1" />
+          <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
           <button
             onClick={() => setShowGridLines(!showGridLines)}
             className={`p-2 rounded-lg transition-colors border ${showGridLines ? 'bg-muted border-primary/50 text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
@@ -470,6 +474,7 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
 
       {/* Show demo data when no widgets, or live data when widgets exist */}
       {!hasWidgets ? (

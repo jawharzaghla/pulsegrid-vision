@@ -1,0 +1,45 @@
+\babel@toc {french}{}\relax 
+\contentsline {chapter}{Remerciements}{2}{chapter*.1}%
+\contentsline {chapter}{Résumé}{4}{chapter*.2}%
+\contentsline {chapter}{Introduction}{1}{chapter*.6}%
+\contentsline {chapter}{\numberline {1}Étude préalable}{4}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Recueil}{4}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Mission et Objectifs}{5}{subsection.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}Analyse de l'existant}{6}{subsection.1.1.2}%
+\contentsline {subsubsection}{Présentation de l'entreprise}{8}{subsubsection*.8}%
+\contentsline {subsubsection}{Étude de sites web similaires}{12}{subsubsection*.11}%
+\contentsline {section}{\numberline {1.2}Conclusion}{13}{section.1.2}%
+\contentsline {chapter}{\numberline {2}Modélisation des besoins}{15}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Objectif du site}{15}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Public visé}{16}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Services offerts}{17}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Diagramme de cas d'utilisation}{18}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Identification et représentation des scénarios}{21}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Diagrammes de séquences}{25}{subsection.2.3.3}%
+\contentsline {subsubsection}{Séquence d'authentification et chiffrement}{25}{subsubsection*.18}%
+\contentsline {subsubsection}{Séquence de récupération des données des widgets}{27}{subsubsection*.20}%
+\contentsline {subsubsection}{Séquence d'analyse Intelligence Artificielle}{28}{subsubsection*.22}%
+\contentsline {section}{\numberline {2.4}Contenu informationnel}{29}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Conclusion}{30}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Modélisation conceptuelle}{31}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Architecture statique de PulseGrid}{31}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Architecture du Back Office}{32}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Architecture du Front Office}{33}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Diagramme d'états transitions}{34}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Aspect visuel}{35}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Conclusion}{37}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Réalisation du site web}{38}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Environnement de réalisation}{38}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Environnement matériel}{39}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Environnement logiciel}{39}{subsection.4.1.2}%
+\contentsline {section}{\numberline {4.2}Vers la réalisation du site web}{41}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Passage du diagramme de classes au modèle logique de données}{41}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Modélisation physique}{43}{subsection.4.2.2}%
+\contentsline {section}{\numberline {4.3}Schéma de navigation du site de PulseGrid}{44}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Réalisation de l'aspect visuel du site de PulseGrid}{45}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Conclusion}{49}{section.4.5}%
+\contentsline {chapter}{Conclusion Générale}{51}{chapter*.33}%
+\contentsline {chapter}{Bibliographie}{53}{chapter*.34}%
+\contentsline {chapter}{Webliographie}{54}{chapter*.35}%
+\contentsline {chapter}{Glossaire}{55}{chapter*.36}%
+\contentsline {chapter}{Annexes}{58}{chapter*.37}%

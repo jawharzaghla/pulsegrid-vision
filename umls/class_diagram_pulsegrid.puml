@@ -1,0 +1,149 @@
+@startuml PulseGrid_Class_Diagram
+
+!theme plain
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam shadowing false
+skinparam monochrome true
+skinparam packageStyle rectangle
+skinparam nodesep 60
+skinparam ranksep 70
+skinparam class {
+    BackgroundColor White
+    BorderColor Black
+    ArrowColor Black
+}
+
+package Services_Angular {
+    class AuthService {
+        -currentUser: "Signal<PulseGridUser>"
+        +login(email, pass)
+        +logout()
+        -fetchUserProfile(uid)
+    }
+
+    class CryptoService {
+        -PBKDF2_ITERATIONS: number
+        +deriveKey(pass, salt): CryptoKey
+        +encrypt(data, key): string
+        +decrypt(data, key): string
+    }
+
+    class WidgetDataService {
+        +fetchWidgetData(widget, key): CleanedMetricPayload
+        -buildAuthHeaders(method, config, key): Headers
+        -mapSeries(data, path): "Array<Series>"
+    }
+
+    class GroqService {
+        +analyzeWidgetData(data): string
+        +extractWithAI(rawJson, desc): CleanedMetricPayload
+    }
+}
+
+package Models {
+    class PulseGridUser {
+        +id: string
+        +email: string
+        +name: string
+        +tier: string
+        +encryptionSalt: string
+    }
+
+    class Project {
+        +id: string
+        +userId: string
+        +name: string
+        +widgets: "Array<Widget>"
+        +layout: "Array<LayoutItem>"
+    }
+
+    class Widget {
+        +id: string
+        +title: string
+        +endpointUrl: string
+        +authMethod: AuthMethod
+        +authConfig: "Record<string,string>"
+        +dataMapping: DataMapping
+        +visualization: VisualizationType
+        +displayOptions: DisplayOptions
+        +refreshInterval: number
+    }
+
+    class DataMapping {
+        +primaryValuePath: string
+        +labelPath: string
+        +seriesPath: string
+        +aiDescription: string
+    }
+
+    enum VisualizationType {
+        KPI_CARD
+        LINE_CHART
+        BAR_CHART
+        DONUT_CHART
+        GAUGE
+    }
+
+    enum AuthMethod {
+        NONE
+        API_KEY
+        BEARER
+        BASIC
+    }
+
+    class DisplayOptions {
+        +unitPrefix: string
+        +unitSuffix: string
+        +decimalPlaces: number
+        +colorPalette: string
+    }
+
+    class LayoutItem {
+        +widgetId: string
+        +x: number
+        +y: number
+        +w: number
+        +h: number
+    }
+
+    class CleanedMetricPayload {
+        +widgetTitle: string
+        +primaryValue: any
+        +unit: string
+        +trend: number
+        +series: "Array<Series>"
+    }
+
+    class Series {
+        +label: string
+        +value: number
+    }
+}
+
+' --- Layout and Relationships ---
+
+' Force Services to be at the top
+Services_Angular -[hidden]down-> Models
+
+' Services depend on Models (Vertical Flow)
+AuthService -down-> PulseGridUser : manages
+WidgetDataService -down-> Widget : fetches
+WidgetDataService -down-> CleanedMetricPayload : produces
+
+' Internal Service layout (Horizontal to stay compact)
+AuthService -[hidden]right- WidgetDataService
+WidgetDataService -right-> CryptoService : uses
+WidgetDataService -left-> GroqService : uses
+
+' Models Hierarchy (Vertical Flow)
+PulseGridUser "1" -down-> "*" Project : owns
+Project "1" *-- "*" Widget : contains
+Project "1" *-- "*" LayoutItem : positions
+Widget "1" *-- "1" DataMapping : defines
+Widget "1" *-- "1" DisplayOptions : styles
+Widget -down-> AuthMethod : uses
+Widget -down-> VisualizationType : uses
+CleanedMetricPayload "1" *-- "*" Series : contains
+
+@enduml

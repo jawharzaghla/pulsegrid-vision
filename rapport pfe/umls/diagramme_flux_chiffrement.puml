@@ -1,0 +1,60 @@
+@startuml "Flux de Chiffrement"
+
+' ---- Visual Configuration & Autonumbering Customization ----
+skinparam style strictuml
+skinparam maxMessageSize 250
+skinparam BoxPadding 10
+skinparam ParticipantPadding 15
+
+title Diagramme de Séquence : Flux de Chiffrement (Zero Storage)
+
+' ---- Lifeline Declaration (BCE Model Architecture) ----
+actor "Utilisateur" as Utilisateur
+boundary ":InterfaceSecurite" as InterfaceSecurite
+control ":GestionnaireCrypto" as GestionnaireCrypto
+entity "bd:Utilisateur" as bdUtilisateur
+entity "bd:Configuration" as bdConfiguration
+entity "API:Externe" as APIExterne
+
+' ---- Dynamic Interaction Flow ----
+
+== Phase 1 : Dérivation de la Clé (Connexion) ==
+
+Utilisateur -> InterfaceSecurite : 1 seConnecter(email, motDePasse)
+InterfaceSecurite -> GestionnaireCrypto : 2 initialiserSession(email, motDePasse)
+
+GestionnaireCrypto -> bdUtilisateur : 3 recupererSalt(email)
+
+alt Utilisateur introuvable
+    bdUtilisateur --> GestionnaireCrypto : 4 retournerErreur()
+    GestionnaireCrypto --> InterfaceSecurite : 5 echecAuthentification()
+else Utilisateur trouvé
+    bdUtilisateur --> GestionnaireCrypto : 6 retournerSalt()
+    GestionnaireCrypto -> GestionnaireCrypto : 7 executerPBKDF2(motDePasse, salt)
+    GestionnaireCrypto --> InterfaceSecurite : 8 sessionActive(cleEnMemoire)
+
+    == Phase 2 : Chiffrement & Stockage ==
+    
+    Utilisateur -> InterfaceSecurite : 9 configurerWidget(apiKey)
+    InterfaceSecurite -> GestionnaireCrypto : 10 chiffrerSecret(apiKey, cleEnMemoire)
+    GestionnaireCrypto -> GestionnaireCrypto : 11 executerAESGCM(apiKey)
+    GestionnaireCrypto --> InterfaceSecurite : 12 retournerCiphertext()
+    
+    InterfaceSecurite -> bdConfiguration : 13 stockerWidget(ciphertext)
+    bdConfiguration --> InterfaceSecurite : 14 confirmerSauvegarde()
+
+    == Phase 3 : Déchiffrement & Consommation ==
+    
+    InterfaceSecurite -> bdConfiguration : 15 recupererConfigurationWidget()
+    bdConfiguration --> InterfaceSecurite : 16 retournerCiphertext()
+    
+    InterfaceSecurite -> GestionnaireCrypto : 17 dechiffrerSecret(ciphertext, cleEnMemoire)
+    GestionnaireCrypto -> GestionnaireCrypto : 18 executerAESGCMInverse()
+    GestionnaireCrypto --> InterfaceSecurite : 19 retournerApiKey()
+    
+    InterfaceSecurite -> APIExterne : 20 requeteDonnees(apiKey)
+    APIExterne --> InterfaceSecurite : 21 retournerDonneesJSON()
+    InterfaceSecurite --> Utilisateur : 22 afficherGraphiques()
+end
+
+@enduml

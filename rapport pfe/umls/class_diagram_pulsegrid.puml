@@ -1,0 +1,126 @@
+@startuml PulseGrid_Class_Diagram
+
+!theme plain
+skinparam linetype polyline
+skinparam roundcorner 0
+skinparam shadowing false
+skinparam monochrome true
+
+
+package Models {
+    class PulseGridUser {
+        +id: string
+        +email: string
+        +name: string
+        +tier: string
+        +encryptionSalt: string
+    }
+
+    class Project {
+        +id: string
+        +userId: string
+        +name: string
+        +widgets: "Array<Widget>"
+        +layout: "Array<LayoutItem>"
+    }
+
+    class Widget {
+        +id: string
+        +title: string
+        +endpointUrl: string
+        +authMethod: AuthMethod
+        +authConfig: "Record<string,string>"
+        +dataMapping: DataMapping
+        +visualization: VisualizationType
+        +displayOptions: DisplayOptions
+        +refreshInterval: number
+    }
+
+    class DataMapping {
+        +primaryValuePath: string
+        +labelPath: string
+        +seriesPath: string
+        +aiDescription: string
+    }
+
+    enum VisualizationType {
+        KPI_CARD
+        LINE_CHART
+        BAR_CHART
+        DONUT_CHART
+        GAUGE
+    }
+
+    enum AuthMethod {
+        NONE
+        API_KEY
+        BEARER
+        BASIC
+    }
+    class DisplayOptions {
+        +unitPrefix: string
+        +unitSuffix: string
+        +decimalPlaces: number
+        +colorPalette: string
+    }
+
+    class LayoutItem {
+        +widgetId: string
+        +x: number
+        +y: number
+        +w: number
+        +h: number
+    }
+
+    class CleanedMetricPayload {
+        +widgetTitle: string
+        +primaryValue: any
+        +unit: string
+        +trend: number
+        +series: "Array<Series>"
+    }
+
+    class Series {
+        +label: string
+        +value: number
+    }
+}
+
+
+package Services_Angular {
+    class AuthService {
+        -currentUser: "Signal<PulseGridUser>"
+        +login(email, pass)
+        +logout()
+        -fetchUserProfile(uid)
+    }
+
+    class CryptoService {
+        -PBKDF2_ITERATIONS: number
+        +deriveKey(pass, salt): CryptoKey
+        +encrypt(data, key): string
+        +decrypt(data, key): string
+    }
+
+    class WidgetDataService {
+        +fetchWidgetData(widget, key): CleanedMetricPayload
+        -buildAuthHeaders(method, config, key): Headers
+        -mapSeries(data, path): "Array<Series>"
+    }
+
+    class GroqService {
+        +analyzeWidgetData(data): string
+        +extractWithAI(rawJson, desc): CleanedMetricPayload
+    }
+}
+
+' --- Relationships ---
+Project "1" *-- "*" Widget : contains
+Widget "1" *-- "1" DataMapping : defines
+Widget ..> VisualizationType : uses
+AuthService ..> PulseGridUser : manages
+WidgetDataService ..> Widget : fetches
+WidgetDataService ..> CryptoService : uses for decryption
+WidgetDataService ..> GroqService : uses for AI extraction
+
+@enduml

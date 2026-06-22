@@ -299,4 +299,64 @@ router.get('/projects/:id', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * POST /api/admin/users
+ * Create a new user (Firebase Auth + Firestore profile)
+ */
+router.post('/users', requireAdmin, async (req, res) => {
+    const { email, password, name, tier } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'EMAIL_AND_PASSWORD_REQUIRED' });
+    }
+    try {
+        const userRecord = await admin.auth().createUser({
+            email,
+            password,
+            displayName: name || undefined,
+        });
+        await admin.firestore().collection('users').doc(userRecord.uid).set({
+            email,
+            name: name || '',
+            tier: tier || 'free',
+            isBanned: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        res.status(201).json({ id: userRecord.uid, email, name: name || '', tier: tier || 'free' });
+    } catch (err) {
+        console.error('Admin create user error:', err);
+        const code = err.code === 'auth/email-already-exists' ? 'EMAIL_ALREADY_EXISTS' : 'FAILED_TO_CREATE_USER';
+        res.status(400).json({ error: code });
+    }
+});
+
+/**
+ * DELETE /api/admin/users/:id
+ * Delete a user from Firebase Auth and remove their Firestore documents
+ */
+router.delete('/users/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Remove user-owned projects and widgets first (cascade)
+        const projectsSnap = await admin.firestore().collection('projects').where('userId', '==', id).get();
+        const batch = admin.firestore().batch();
+        const projectIds = [];
+        projectsSnap.forEach(doc => { batch.delete(doc.ref); projectIds.push(doc.id); });
+        for (const pid of projectIds) {
+            const widgetsSnap = await admin.firestore().collection('widgets').where('projectId', '==', pid).get();
+            widgetsSnap.forEach(w => batch.delete(w.ref));
+        }
+        batch.delete(admin.firestore().collection('users').doc(id));
+        await batch.commit();
+
+        // Then remove the Auth record (safe even if Firestore had no doc)
+        try { await admin.auth().deleteUser(id); } catch (e) { /* user may not exist in Auth */ }
+
+        res.json({ success: true, removedProjects: projectIds.length });
+    } catch (err) {
+        console.error('Admin delete user error:', err);
+        res.status(500).json({ error: 'FAILED_TO_DELETE_USER' });
+    }
+});
+
 export default router;

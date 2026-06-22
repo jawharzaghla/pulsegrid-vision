@@ -46,7 +46,7 @@ const DemoLayout = ({ tier }: DemoLayoutProps) => {
       <div className={`mx-4 mt-4 px-3 py-2 rounded-lg ${config.bg} border ${config.badge} flex items-center gap-2`}>
         <Icon size={14} className={config.color} />
         <span className={`text-xs font-semibold ${config.color}`}>
-          DEMO MODE — {config.label.toUpperCase()}
+          MODE DÉMO — {config.label.toUpperCase()}
         </span>
       </div>
 
@@ -62,7 +62,7 @@ const DemoLayout = ({ tier }: DemoLayoutProps) => {
           }`}
         >
           {tier === 'free' ? <LayoutDashboard size={18} /> : <FolderOpen size={18} />}
-          {tier === 'free' ? 'Dashboard' : 'Projects'}
+          {tier === 'free' ? 'Tableau de bord' : 'Projets'}
         </Link>
       </nav>
 
@@ -74,7 +74,7 @@ const DemoLayout = ({ tier }: DemoLayoutProps) => {
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft size={16} />
-          Back to Home
+          Retour à l'accueil
         </Link>
       </div>
     </div>
@@ -117,14 +117,14 @@ const DemoLayout = ({ tier }: DemoLayoutProps) => {
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse shrink-0" />
               <span className="text-xs text-muted-foreground truncate">
-                You're viewing a <span className={`font-semibold ${config.color}`}>{config.label}</span> plan demo with live data
+                Vous consultez une démo de l'offre <span className={`font-semibold ${config.color}`}>{config.label}</span> avec des données en direct
               </span>
             </div>
             <Link
               to="/signup"
               className="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-lg transition-all shrink-0"
             >
-              Sign Up Free
+              Inscription gratuite
             </Link>
           </div>
 

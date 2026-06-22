@@ -19,10 +19,10 @@ interface ChatMessage {
 }
 
 const tabs: { mode: AnalysisMode; label: string; icon: React.ReactNode }[] = [
-  { mode: "project-brief", label: "Project Brief", icon: <FileText size={14} /> },
-  { mode: "widget", label: "Widget Analysis", icon: <Brain size={14} /> },
-  { mode: "ask", label: "Ask a Question", icon: <MessageSquare size={14} /> },
-  { mode: "daily-brief", label: "Daily Brief", icon: <Sun size={14} /> },
+  { mode: "project-brief", label: "Synthèse du projet", icon: <FileText size={14} /> },
+  { mode: "widget", label: "Analyse des widgets", icon: <Brain size={14} /> },
+  { mode: "ask", label: "Poser une question", icon: <MessageSquare size={14} /> },
+  { mode: "daily-brief", label: "Synthèse quotidienne", icon: <Sun size={14} /> },
 ];
 
 const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
@@ -62,7 +62,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
       } else if (err instanceof AIError) {
         setError(err.message);
       } else {
-        setError('AI service is currently unavailable. Please check your backend proxy and try again.');
+        setError("Le service IA est actuellement indisponible. Veuillez vérifier votre proxy backend et réessayer.");
       }
     } finally {
       setLoading((prev) => ({ ...prev, [mode]: false }));
@@ -82,7 +82,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
     } catch (err) {
       const message = err instanceof AIError
         ? err.message
-        : 'AI service is currently unavailable. Please check your backend proxy and try again.';
+        : "Le service IA est actuellement indisponible. Veuillez vérifier votre proxy backend et réessayer.";
       setChatMessages((prev) => [...prev, { role: 'ai', content: message }]);
     }
   };
@@ -101,7 +101,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
         <div className="p-6 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles size={18} className="text-accent" />
-            <h2 className="text-lg font-bold">AI Analysis</h2>
+            <h2 className="text-lg font-bold">Analyse IA</h2>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={20} />
@@ -140,8 +140,8 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
               {chatMessages.length === 0 && (
                 <div className="text-center py-12">
                   <MessageSquare size={32} className="text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">Ask anything about your data.</p>
-                  <p className="text-xs text-muted-foreground mt-1">e.g., "Why did revenue drop this month?"</p>
+                  <p className="text-sm text-muted-foreground">Posez n’importe quelle question sur vos données.</p>
+                  <p className="text-xs text-muted-foreground mt-1">par ex. : « Pourquoi le chiffre d’affaires a-t-il baissé ce mois-ci ? »</p>
                 </div>
               )}
               {chatMessages.map((msg, i) => (
@@ -170,12 +170,12 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
               {!currentContent && !isLoading && (
                 <div className="text-center py-12">
                   <Brain size={32} className="text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground mb-4">Generate an AI analysis of your data.</p>
+                  <p className="text-sm text-muted-foreground mb-4">Générez une analyse IA de vos données.</p>
                   <button
                     onClick={() => handleAnalyze(activeTab)}
                     className="px-4 py-2 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent rounded-lg text-sm font-medium transition-all flex items-center gap-2 mx-auto"
                   >
-                    <Sparkles size={14} /> Generate {tabs.find((t) => t.mode === activeTab)?.label}
+                    <Sparkles size={14} /> Générer : {tabs.find((t) => t.mode === activeTab)?.label}
                   </button>
                 </div>
               )}
@@ -183,7 +183,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
               {isLoading && (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 size={24} className="text-accent animate-spin" />
-                  <p className="text-sm text-muted-foreground ml-3">Analyzing your data...</p>
+                  <p className="text-sm text-muted-foreground ml-3">Analyse de vos données…</p>
                 </div>
               )}
 
@@ -197,13 +197,13 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
                       onClick={() => handleAnalyze(activeTab)}
                       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <RefreshCw size={12} /> Regenerate
+                      <RefreshCw size={12} /> Régénérer
                     </button>
                     <button
                       onClick={() => handleCopy(currentContent)}
                       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Copy size={12} /> Copy
+                      <Copy size={12} /> Copier
                     </button>
                   </div>
                 </div>
@@ -217,7 +217,7 @@ const AIPanel = ({ projectId, widgetPayloads, onClose }: AIPanelProps) => {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-2">
               <input
-                placeholder="Ask about your data..."
+                placeholder="Posez une question sur vos données…"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAsk()}

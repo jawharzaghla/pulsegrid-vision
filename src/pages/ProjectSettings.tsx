@@ -7,22 +7,22 @@ import type { Project, ProjectTheme } from "@/types/models";
 
 const fontSizeOptions = [
   { value: "compact", label: "Compact" },
-  { value: "comfortable", label: "Comfortable" },
-  { value: "spacious", label: "Spacious" },
+  { value: "comfortable", label: "Confortable" },
+  { value: "spacious", label: "Spacieux" },
 ];
 
 const borderOptions = [
-  { value: "none", label: "None" },
-  { value: "subtle", label: "Subtle" },
-  { value: "card", label: "Card" },
-  { value: "elevated", label: "Elevated" },
+  { value: "none", label: "Aucune" },
+  { value: "subtle", label: "Subtile" },
+  { value: "card", label: "Carte" },
+  { value: "elevated", label: "Surélevée" },
 ];
 
 const paletteOptions = [
-  { value: "default", label: "Default" },
-  { value: "warm", label: "Warm" },
-  { value: "cool", label: "Cool" },
-  { value: "neon", label: "Neon" },
+  { value: "default", label: "Par défaut" },
+  { value: "warm", label: "Chaude" },
+  { value: "cool", label: "Froide" },
+  { value: "neon", label: "Néon" },
 ];
 
 const ProjectSettings = () => {
@@ -96,15 +96,15 @@ const ProjectSettings = () => {
         <Link to={`/app/projects/${id}`} className="text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold">Project Settings</h1>
+        <h1 className="text-2xl font-bold">Paramètres du projet</h1>
       </div>
 
       <div className="space-y-8">
         {/* General */}
         <section className="glass rounded-xl p-6 card-shadow space-y-4">
-          <h2 className="font-semibold mb-4">General</h2>
+          <h2 className="font-semibold mb-4">Général</h2>
           <div>
-            <label className="text-micro block mb-2">PROJECT NAME</label>
+            <label className="text-micro block mb-2">NOM DU PROJET</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
           </div>
           <div>
@@ -117,7 +117,7 @@ const ProjectSettings = () => {
               <input value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={2} className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-center text-xl" />
             </div>
             <div>
-              <label className="text-micro block mb-2">ACCENT COLOR</label>
+              <label className="text-micro block mb-2">COULEUR D'ACCENT</label>
               <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-full h-11 bg-muted/50 border border-border rounded-lg cursor-pointer" />
             </div>
           </div>
@@ -125,21 +125,21 @@ const ProjectSettings = () => {
 
         {/* Theme */}
         <section className="glass rounded-xl p-6 card-shadow space-y-4">
-          <h2 className="font-semibold mb-4">Theme</h2>
+          <h2 className="font-semibold mb-4">Thème</h2>
           <div>
-            <label className="text-micro block mb-2">CHART PALETTE</label>
+            <label className="text-micro block mb-2">PALETTE DES GRAPHIQUES</label>
             <select value={chartPalette} onChange={(e) => setChartPalette(e.target.value)} className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
               {paletteOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-micro block mb-2">FONT SIZE</label>
+            <label className="text-micro block mb-2">TAILLE DE POLICE</label>
             <select value={fontSize} onChange={(e) => setFontSize(e.target.value as ProjectTheme["fontSize"])} className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
               {fontSizeOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-micro block mb-2">WIDGET BORDER STYLE</label>
+            <label className="text-micro block mb-2">STYLE DE BORDURE DES WIDGETS</label>
             <select value={widgetBorder} onChange={(e) => setWidgetBorder(e.target.value as ProjectTheme["widgetBorder"])} className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
               {borderOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -148,26 +148,26 @@ const ProjectSettings = () => {
 
         {/* Save button */}
         <button onClick={handleSave} disabled={saving} className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all disabled:opacity-50">
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? "Enregistrement…" : "Enregistrer les paramètres"}
         </button>
 
         {/* Danger Zone */}
         <section className="border border-destructive/30 rounded-xl p-6 space-y-4">
           <h2 className="font-semibold text-destructive flex items-center gap-2">
-            <AlertTriangle size={16} /> Danger Zone
+            <AlertTriangle size={16} /> Zone sensible
           </h2>
-          <p className="text-sm text-muted-foreground">Deleting this project will remove all widgets and data permanently.</p>
+          <p className="text-sm text-muted-foreground">Supprimer ce projet effacera définitivement tous ses widgets et ses données.</p>
           {!showDelete ? (
             <button onClick={() => setShowDelete(true)} className="px-4 py-2 border border-destructive/50 text-destructive rounded-lg text-sm hover:bg-destructive/10 transition-all flex items-center gap-2">
-              <Trash2 size={14} /> Delete Project
+              <Trash2 size={14} /> Supprimer le projet
             </button>
           ) : (
             <div className="flex items-center gap-3">
               <button onClick={handleDelete} className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium">
-                Confirm Delete
+                Confirmer la suppression
               </button>
               <button onClick={() => setShowDelete(false)} className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:text-foreground transition-all">
-                Cancel
+                Annuler
               </button>
             </div>
           )}

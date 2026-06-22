@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setCryptoKey(key);
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Sign in failed';
+            const message = err instanceof Error ? err.message : "Échec de la connexion";
             setError(formatFirebaseError(message));
             throw err;
         } finally {
@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setCryptoKey(key);
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Sign up failed';
+            const message = err instanceof Error ? err.message : "Échec de l'inscription";
             setError(formatFirebaseError(message));
             throw err;
         } finally {
@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(true);
             await signInWithGoogle();
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Google sign in failed';
+            const message = err instanceof Error ? err.message : "Échec de la connexion Google";
             setError(formatFirebaseError(message));
             throw err;
         } finally {
@@ -192,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(null);
             setCryptoKey(null);
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Sign out failed';
+            const message = err instanceof Error ? err.message : "Échec de la déconnexion";
             setError(formatFirebaseError(message));
         }
     };
@@ -234,13 +234,13 @@ export function useAuth(): AuthContextType {
  * Convert Firebase error codes to user-friendly messages.
  */
 function formatFirebaseError(message: string): string {
-    if (message.includes('auth/email-already-in-use')) return 'This email is already registered.';
-    if (message.includes('auth/invalid-email')) return 'Please enter a valid email address.';
-    if (message.includes('auth/weak-password')) return 'Password must be at least 6 characters.';
-    if (message.includes('auth/user-not-found')) return 'No account found with this email.';
-    if (message.includes('auth/wrong-password')) return 'Incorrect password.';
-    if (message.includes('auth/invalid-credential')) return 'Invalid email or password.';
-    if (message.includes('auth/too-many-requests')) return 'Too many attempts. Please try again later.';
-    if (message.includes('auth/popup-closed-by-user')) return 'Google sign-in was cancelled.';
+    if (message.includes('auth/email-already-in-use')) return "Cette adresse e-mail est déjà utilisée.";
+    if (message.includes('auth/invalid-email')) return "Veuillez saisir une adresse e-mail valide.";
+    if (message.includes('auth/weak-password')) return "Le mot de passe doit comporter au moins 6 caractères.";
+    if (message.includes('auth/user-not-found')) return "Aucun compte associé à cette adresse e-mail.";
+    if (message.includes('auth/wrong-password')) return "Mot de passe incorrect.";
+    if (message.includes('auth/invalid-credential')) return "E-mail ou mot de passe incorrect.";
+    if (message.includes('auth/too-many-requests')) return "Trop de tentatives. Veuillez réessayer plus tard.";
+    if (message.includes('auth/popup-closed-by-user')) return "La connexion Google a été annulée.";
     return message;
 }

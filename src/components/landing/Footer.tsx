@@ -2,9 +2,9 @@ import PulseGridLogo from "../PulseGridLogo";
 
 const Footer = () => {
   const columns = [
-    { title: "Product", links: ["Features", "Pricing", "Docs", "Changelog"] },
-    { title: "Company", links: ["About", "Blog", "Careers", "Contact"] },
-    { title: "Legal", links: ["Privacy", "Terms", "Security", "GDPR"] },
+    { title: "Produit", links: ["Fonctionnalités", "Tarifs", "Docs", "Nouveautés"] },
+    { title: "Entreprise", links: ["À propos", "Blog", "Carrières", "Contact"] },
+    { title: "Légal", links: ["Confidentialité", "Conditions", "Sécurité", "RGPD"] },
   ];
 
   return (
@@ -14,7 +14,7 @@ const Footer = () => {
           <div className="md:col-span-2">
             <PulseGridLogo />
             <p className="text-body text-muted-foreground mt-3 max-w-xs">
-              Business intelligence that fits on one screen. Built for founders, operators, and data-driven teams.
+              La business intelligence qui tient sur un seul écran. Pensée pour les fondateurs, les opérationnels et les équipes qui pilotent par la donnée.
             </p>
           </div>
           {columns.map((col, i) => (
@@ -33,7 +33,7 @@ const Footer = () => {
           ))}
         </div>
         <div className="mt-12 pt-6 border-t border-border/30 text-center text-micro text-muted-foreground">
-          © 2026 PulseGrid. All rights reserved.
+          © 2026 PulseGrid. Tous droits réservés.
         </div>
       </div>
     </footer>

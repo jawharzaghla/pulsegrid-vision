@@ -25,9 +25,9 @@ const AccountSettings = () => {
     setProfileMessage("");
     try {
       await updateUserName(name);
-      setProfileMessage("Profile updated.");
+      setProfileMessage("Profil mis à jour.");
     } catch (err) {
-      setProfileMessage("Failed to update profile.");
+      setProfileMessage("Échec de la mise à jour du profil.");
     } finally {
       setSavingProfile(false);
     }
@@ -35,23 +35,23 @@ const AccountSettings = () => {
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      setPasswordMessage("Passwords do not match.");
+      setPasswordMessage("Les mots de passe ne correspondent pas.");
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordMessage("Password must be at least 6 characters.");
+      setPasswordMessage("Le mot de passe doit comporter au moins 6 caractères.");
       return;
     }
     setSavingPassword(true);
     setPasswordMessage("");
     try {
       await changePassword(currentPassword, newPassword);
-      setPasswordMessage("Password changed successfully.");
+      setPasswordMessage("Mot de passe modifié avec succès.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch {
-      setPasswordMessage("Failed. Check your current password.");
+      setPasswordMessage("Échec. Vérifiez votre mot de passe actuel.");
     } finally {
       setSavingPassword(false);
     }
@@ -61,14 +61,14 @@ const AccountSettings = () => {
 
   return (
     <div className="p-8 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-8">Account Settings</h1>
+      <h1 className="text-2xl font-bold mb-8">Paramètres du compte</h1>
 
       <div className="space-y-8">
         {/* Profile Section */}
         <section className="glass rounded-xl p-6 card-shadow space-y-4">
-          <h2 className="font-semibold mb-2">Profile</h2>
+          <h2 className="font-semibold mb-2">Profil</h2>
           <div>
-            <label className="text-micro block mb-2">FULL NAME</label>
+            <label className="text-micro block mb-2">NOM COMPLET</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -76,16 +76,16 @@ const AccountSettings = () => {
             />
           </div>
           <div>
-            <label className="text-micro block mb-2">EMAIL</label>
+            <label className="text-micro block mb-2">E-MAIL</label>
             <input
               value={firebaseUser?.email || ""}
               disabled
               className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-lg text-body text-muted-foreground cursor-not-allowed"
             />
-            <p className="text-xs text-muted-foreground mt-1">Email cannot be changed.</p>
+            <p className="text-xs text-muted-foreground mt-1">L'adresse e-mail ne peut pas être modifiée.</p>
           </div>
           {profileMessage && (
-            <p className={`text-sm ${profileMessage.includes("updated") ? "text-success" : "text-destructive"}`}>
+            <p className={`text-sm ${profileMessage.includes("mis à jour") ? "text-success" : "text-destructive"}`}>
               {profileMessage}
             </p>
           )}
@@ -95,15 +95,15 @@ const AccountSettings = () => {
             className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
           >
             {savingProfile && <Loader2 size={14} className="animate-spin" />}
-            {savingProfile ? "Saving..." : "Save Profile"}
+            {savingProfile ? "Enregistrement…" : "Enregistrer le profil"}
           </button>
         </section>
 
         {/* Password Section */}
         <section className="glass rounded-xl p-6 card-shadow space-y-4">
-          <h2 className="font-semibold mb-2">Change Password</h2>
+          <h2 className="font-semibold mb-2">Changer le mot de passe</h2>
           <div>
-            <label className="text-micro block mb-2">CURRENT PASSWORD</label>
+            <label className="text-micro block mb-2">MOT DE PASSE ACTUEL</label>
             <input
               type="password"
               value={currentPassword}
@@ -114,7 +114,7 @@ const AccountSettings = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-micro block mb-2">NEW PASSWORD</label>
+              <label className="text-micro block mb-2">NOUVEAU MOT DE PASSE</label>
               <input
                 type="password"
                 value={newPassword}
@@ -124,7 +124,7 @@ const AccountSettings = () => {
               />
             </div>
             <div>
-              <label className="text-micro block mb-2">CONFIRM NEW</label>
+              <label className="text-micro block mb-2">CONFIRMER</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -135,7 +135,7 @@ const AccountSettings = () => {
             </div>
           </div>
           {passwordMessage && (
-            <p className={`text-sm ${passwordMessage.includes("changed") ? "text-success" : "text-destructive"}`}>
+            <p className={`text-sm ${passwordMessage.includes("succès") ? "text-success" : "text-destructive"}`}>
               {passwordMessage}
             </p>
           )}
@@ -145,13 +145,13 @@ const AccountSettings = () => {
             className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
           >
             {savingPassword && <Loader2 size={14} className="animate-spin" />}
-            {savingPassword ? "Changing..." : "Change Password"}
+            {savingPassword ? "Modification…" : "Changer le mot de passe"}
           </button>
         </section>
 
         {/* Plan Section */}
         <section className="glass rounded-xl p-6 card-shadow space-y-4">
-          <h2 className="font-semibold mb-2">Plan</h2>
+          <h2 className="font-semibold mb-2">Offre</h2>
           <div className="flex items-center gap-3">
             <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${userTier === "free" ? "bg-muted text-muted-foreground" :
               userTier === "pro" ? "bg-primary/20 text-primary" :
@@ -160,21 +160,21 @@ const AccountSettings = () => {
               {userTier}
             </div>
             <span className="text-sm text-muted-foreground">
-              {userTier === "free" ? "2 projects, 5 widgets each" :
-                userTier === "pro" ? "10 projects, 25 widgets each" :
-                  "Unlimited projects & widgets"}
+              {userTier === "free" ? "2 projets, 5 widgets chacun" :
+                userTier === "pro" ? "10 projets, 25 widgets chacun" :
+                  "Projets et widgets illimités"}
             </span>
           </div>
 
           {userTier === "free" && (
             <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <p className="text-sm font-medium mb-1">Upgrade to Pro</p>
-              <p className="text-xs text-muted-foreground mb-3">Unlock more projects, AI analyses, and faster refresh rates.</p>
+              <p className="text-sm font-medium mb-1">Passer à Pro</p>
+              <p className="text-xs text-muted-foreground mb-3">Débloquez plus de projets, plus d'analyses IA et des actualisations plus rapides.</p>
               <button
                 onClick={() => setIsUpgradeModalOpen(true)}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all"
               >
-                Upgrade My Plan
+                Faire évoluer mon offre
               </button>
             </div>
           )}

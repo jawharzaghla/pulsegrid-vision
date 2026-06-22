@@ -187,15 +187,15 @@ export async function fetchWidgetData(
             const response = await fetch(widget.endpointUrl, { headers, signal: controller.signal });
 
             if (response.status === 401 || response.status === 403) {
-                throw createWidgetError('FETCH_AUTH_FAILED', 'Authentication failed. Please re-configure your API credentials.', widget.id);
+                throw createWidgetError('FETCH_AUTH_FAILED', "Échec de l'authentification. Veuillez reconfigurer vos identifiants d'API.", widget.id);
             }
             if (!response.ok) {
-                throw createWidgetError('FETCH_NETWORK_ERROR', `Request failed with status ${response.status}`, widget.id);
+                throw createWidgetError('FETCH_NETWORK_ERROR', `La requête a échoué avec le statut ${response.status}`, widget.id);
             }
 
             let data: unknown;
             try { data = await response.json(); } catch {
-                throw createWidgetError('FETCH_PARSE_ERROR', 'Response is not valid JSON.', widget.id);
+                throw createWidgetError('FETCH_PARSE_ERROR', "La réponse n'est pas un JSON valide.", widget.id);
             }
 
             let payloadToExtract = data;
@@ -222,27 +222,27 @@ export async function fetchWidgetData(
         const response = await fetch(widget.endpointUrl, { headers, signal: controller.signal });
 
         if (response.status === 401 || response.status === 403) {
-            throw createWidgetError('FETCH_AUTH_FAILED', 'Authentication failed. Please re-configure your API credentials.', widget.id);
+            throw createWidgetError('FETCH_AUTH_FAILED', "Échec de l'authentification. Veuillez reconfigurer vos identifiants d'API.", widget.id);
         }
         if (!response.ok) {
-            throw createWidgetError('FETCH_NETWORK_ERROR', `Request failed with status ${response.status}`, widget.id);
+            throw createWidgetError('FETCH_NETWORK_ERROR', `La requête a échoué avec le statut ${response.status}`, widget.id);
         }
 
         let data: unknown;
         try { data = await response.json(); } catch {
-            throw createWidgetError('FETCH_PARSE_ERROR', 'Response is not valid JSON.', widget.id);
+            throw createWidgetError('FETCH_PARSE_ERROR', "La réponse n'est pas un JSON valide.", widget.id);
         }
 
         return extractMetrics(data, widget);
     } catch (err: any) {
         if (err instanceof DOMException && err.name === 'AbortError') {
-            throw createWidgetError('FETCH_TIMEOUT', 'Request timed out after 15 seconds.', widget.id);
+            throw createWidgetError('FETCH_TIMEOUT', "La requête a expiré après 15 secondes.", widget.id);
         }
         if (isWidgetError(err)) throw err;
         if (err instanceof Error && (err.name === 'AIError' || err.name === 'JSONRefactorError')) {
             throw createWidgetError('FETCH_PARSE_ERROR', err.message, widget.id);
         }
-        throw createWidgetError('FETCH_NETWORK_ERROR', 'Network error. Check your connection.', widget.id);
+        throw createWidgetError('FETCH_NETWORK_ERROR', "Erreur réseau. Vérifiez votre connexion.", widget.id);
     } finally {
         clearTimeout(timeout);
     }
@@ -267,7 +267,7 @@ export async function fetchAllWidgetData(
             if (isWidgetError(err)) {
                 results.set(widget.id, err);
             } else {
-                results.set(widget.id, createWidgetError('FETCH_NETWORK_ERROR', 'Unknown error', widget.id));
+                results.set(widget.id, createWidgetError('FETCH_NETWORK_ERROR', "Erreur inconnue", widget.id));
             }
         }
     });

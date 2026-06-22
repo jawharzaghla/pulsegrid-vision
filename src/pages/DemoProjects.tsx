@@ -20,19 +20,19 @@ const DemoProjects = ({ tier }: DemoProjectsProps) => {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">My Projects</h1>
+          <h1 className="text-2xl font-bold">Mes projets</h1>
           <span className={`px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border ${
             tier === 'pro' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-accent/10 text-accent border-accent/30'
-          }`}>{tier} Plan</span>
+          }`}>Offre {tier}</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input placeholder="Search projects..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            <input placeholder="Rechercher des projets..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-64 transition-all" />
           </div>
           <div className="text-xs text-muted-foreground px-3 py-1.5 bg-muted/30 rounded-lg border border-border">
-            {projects.length} / {limits.projects === Infinity ? '∞' : limits.projects} projects
+            {projects.length} / {limits.projects === Infinity ? '∞' : limits.projects} projets
           </div>
         </div>
       </div>
@@ -50,7 +50,7 @@ const DemoProjects = ({ tier }: DemoProjectsProps) => {
             </div>
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto pt-4">
               <span className="flex items-center gap-1">
-                {tier === 'pro' ? <Sparkles size={12} className="text-primary" /> : <Crown size={12} className="text-accent" />} Live data
+                {tier === 'pro' ? <Sparkles size={12} className="text-primary" /> : <Crown size={12} className="text-accent" />} Données en direct
               </span>
               <span className="px-2 py-0.5 bg-muted/50 rounded-full">{project.widgets.length} widgets</span>
             </div>
@@ -60,10 +60,10 @@ const DemoProjects = ({ tier }: DemoProjectsProps) => {
 
       <div className="mt-8 p-6 glass rounded-xl border border-border/50">
         <div className="grid grid-cols-4 gap-6 text-center">
-          <div><p className="text-2xl font-bold">{limits.projects === Infinity ? '∞' : limits.projects}</p><p className="text-xs text-muted-foreground mt-1">Projects</p></div>
-          <div><p className="text-2xl font-bold">{limits.widgetsPerProject === Infinity ? '∞' : limits.widgetsPerProject}</p><p className="text-xs text-muted-foreground mt-1">Widgets / Project</p></div>
-          <div><p className="text-2xl font-bold">{limits.aiAnalysesPerDay === Infinity ? '∞' : limits.aiAnalysesPerDay}</p><p className="text-xs text-muted-foreground mt-1">AI Analyses / Day</p></div>
-          <div><p className="text-2xl font-bold">{limits.teamMembers}</p><p className="text-xs text-muted-foreground mt-1">Team Members</p></div>
+          <div><p className="text-2xl font-bold">{limits.projects === Infinity ? '∞' : limits.projects}</p><p className="text-xs text-muted-foreground mt-1">Projets</p></div>
+          <div><p className="text-2xl font-bold">{limits.widgetsPerProject === Infinity ? '∞' : limits.widgetsPerProject}</p><p className="text-xs text-muted-foreground mt-1">Widgets / projet</p></div>
+          <div><p className="text-2xl font-bold">{limits.aiAnalysesPerDay === Infinity ? '∞' : limits.aiAnalysesPerDay}</p><p className="text-xs text-muted-foreground mt-1">Analyses IA / jour</p></div>
+          <div><p className="text-2xl font-bold">{limits.teamMembers}</p><p className="text-xs text-muted-foreground mt-1">Membres de l'équipe</p></div>
         </div>
       </div>
     </div>

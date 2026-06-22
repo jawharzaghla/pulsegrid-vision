@@ -5,9 +5,9 @@ import PulseGridLogo from "@/components/PulseGridLogo";
 import { useAuth } from "@/contexts/AuthContext";
 
 const mockKPIs = [
-  { label: "Revenue", value: "$48,290", change: "↑ 12%", icon: TrendingUp },
-  { label: "Active Users", value: "1,204", change: "↑ 8.1%", icon: Users },
-  { label: "Conversion", value: "3.8%", change: "↑ 0.4%", icon: Target },
+  { label: "Revenus", value: "48 290 $", change: "↑ 12 %", icon: TrendingUp },
+  { label: "Utilisateurs actifs", value: "1 204", change: "↑ 8,1 %", icon: Users },
+  { label: "Conversion", value: "3,8 %", change: "↑ 0,4 %", icon: Target },
 ];
 
 const Login = () => {
@@ -68,7 +68,7 @@ const Login = () => {
         </div>
 
         <p className="text-2xl italic text-muted-foreground mb-12 max-w-sm text-center">
-          "Your businesses, one heartbeat."
+          « Toutes vos activités, un seul battement de cœur. »
         </p>
 
         <div className="space-y-4 w-full max-w-xs">
@@ -101,8 +101,8 @@ const Login = () => {
           <div className="lg:hidden mb-8">
             <PulseGridLogo />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
-          <p className="text-muted-foreground text-body mb-8">Sign in to your workspace.</p>
+          <h1 className="text-2xl font-bold mb-2">Heureux de vous revoir</h1>
+          <p className="text-muted-foreground text-body mb-8">Connectez-vous à votre espace de travail.</p>
 
           {error && (
             <div className="mb-4 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
@@ -113,10 +113,10 @@ const Login = () => {
 
           <form className="space-y-4" onSubmit={onSubmit}>
             <div>
-              <label className="text-micro block mb-2">EMAIL</label>
+              <label className="text-micro block mb-2">E-MAIL</label>
               <input
                 type="email"
-                placeholder="you@company.com"
+                placeholder="vous@entreprise.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -124,7 +124,7 @@ const Login = () => {
               />
             </div>
             <div>
-              <label className="text-micro block mb-2">PASSWORD</label>
+              <label className="text-micro block mb-2">MOT DE PASSE</label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -136,7 +136,7 @@ const Login = () => {
             </div>
 
             <div className="text-right">
-              <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
+              <a href="#" className="text-xs text-primary hover:underline">Mot de passe oublié ?</a>
             </div>
 
             <button
@@ -144,13 +144,13 @@ const Login = () => {
               disabled={submitting}
               className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? "Signing in..." : "Sign In"}
+              {submitting ? "Connexion…" : "Se connecter"}
             </button>
           </form>
 
           <div className="my-6 flex items-center gap-3">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-micro">OR CONTINUE WITH</span>
+            <span className="text-micro">OU CONTINUER AVEC</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
@@ -169,8 +169,8 @@ const Login = () => {
           </button>
 
           <p className="text-center text-body text-muted-foreground mt-6">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-primary hover:underline font-medium">Start free</Link>
+            Pas encore de compte ?{" "}
+            <Link to="/signup" className="text-primary hover:underline font-medium">Commencer gratuitement</Link>
           </p>
         </div>
       </div>

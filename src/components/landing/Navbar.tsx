@@ -24,10 +24,10 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-body text-muted-foreground hover:text-foreground transition-colors">
-            Features
+            Fonctionnalités
           </a>
           <a href="#pricing" className="text-body text-muted-foreground hover:text-foreground transition-colors">
-            Pricing
+            Tarifs
           </a>
           <a href="#" className="text-body text-muted-foreground hover:text-foreground transition-colors">
             Docs
@@ -39,13 +39,13 @@ const Navbar = () => {
             to="/login"
             className="px-4 py-2 text-body text-muted-foreground hover:text-foreground border border-border rounded-lg transition-all hover:border-primary/50"
           >
-            Login
+            Connexion
           </Link>
           <Link
             to="/signup"
             className="px-4 py-2 text-body text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-all font-medium"
           >
-            Start Free
+            Commencer gratuitement
           </Link>
         </div>
       </div>

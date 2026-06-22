@@ -17,7 +17,7 @@ export async function createCheckoutSession(priceId: string, accessToken: string
 
     if (!res.ok) {
         const error = await res.json().catch(() => ({}));
-        throw new Error(error.error || 'Failed to create checkout session');
+        throw new Error(error.error || "Échec de la création de la session de paiement");
     }
 
     const { url } = await res.json();
@@ -34,7 +34,7 @@ export async function createPortalSession(accessToken: string): Promise<void> {
 
     if (!res.ok) {
         const error = await res.json().catch(() => ({}));
-        throw new Error(error.error || 'Failed to create portal session');
+        throw new Error(error.error || "Échec de l'ouverture du portail de facturation");
     }
 
     const { url } = await res.json();

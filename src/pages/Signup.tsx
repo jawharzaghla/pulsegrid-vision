@@ -50,8 +50,8 @@ const Signup = () => {
           <div className="lg:hidden mb-8">
             <PulseGridLogo />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Create your account</h1>
-          <p className="text-muted-foreground text-body mb-8">Start building your command center.</p>
+          <h1 className="text-2xl font-bold mb-2">Créez votre compte</h1>
+          <p className="text-muted-foreground text-body mb-8">Construisez votre centre de pilotage.</p>
 
           {error && (
             <div className="mb-4 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
@@ -62,10 +62,10 @@ const Signup = () => {
 
           <form className="space-y-4" onSubmit={onSubmit}>
             <div>
-              <label className="text-micro block mb-2">FULL NAME</label>
+              <label className="text-micro block mb-2">NOM COMPLET</label>
               <input
                 type="text"
-                placeholder="Jane Doe"
+                placeholder="Jean Dupont"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -73,10 +73,10 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label className="text-micro block mb-2">EMAIL</label>
+              <label className="text-micro block mb-2">E-MAIL</label>
               <input
                 type="email"
-                placeholder="you@company.com"
+                placeholder="vous@entreprise.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -84,7 +84,7 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label className="text-micro block mb-2">PASSWORD</label>
+              <label className="text-micro block mb-2">MOT DE PASSE</label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -102,7 +102,7 @@ const Signup = () => {
               )}
             </div>
             <div>
-              <label className="text-micro block mb-2">CONFIRM PASSWORD</label>
+              <label className="text-micro block mb-2">CONFIRMER LE MOT DE PASSE</label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -113,7 +113,7 @@ const Signup = () => {
                   }`}
               />
               {!passwordsMatch && (
-                <p className="text-xs text-destructive mt-1">Passwords do not match</p>
+                <p className="text-xs text-destructive mt-1">Les mots de passe ne correspondent pas</p>
               )}
             </div>
 
@@ -124,7 +124,7 @@ const Signup = () => {
                 onChange={(e) => setAgreed(e.target.checked)}
                 className="rounded border-border bg-muted accent-primary"
               />
-              I agree to the Terms of Service
+              J'accepte les conditions d'utilisation
             </label>
 
             <button
@@ -132,15 +132,15 @@ const Signup = () => {
               disabled={submitting || !agreed || !passwordsMatch || !password}
               className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? "Creating account..." : "Create Account"}
+              {submitting ? "Création du compte…" : "Créer mon compte"}
             </button>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground mt-4">No credit card required. Free forever plan available.</p>
+          <p className="text-center text-xs text-muted-foreground mt-4">Aucune carte bancaire requise. Offre gratuite à vie disponible.</p>
 
           <p className="text-center text-body text-muted-foreground mt-6">
-            Already have an account?{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+            Vous avez déjà un compte ?{" "}
+            <Link to="/login" className="text-primary hover:underline font-medium">Se connecter</Link>
           </p>
         </div>
       </div>

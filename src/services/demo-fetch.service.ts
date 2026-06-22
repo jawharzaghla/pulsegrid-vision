@@ -66,7 +66,7 @@ export async function fetchAllDemoWidgetData(
       } else {
         results.set(widget.id, {
           code: 'FETCH_NETWORK_ERROR',
-          message: 'Demo data unavailable',
+          message: "Données de démonstration indisponibles",
           widgetId: widget.id,
         });
       }
@@ -233,7 +233,7 @@ function mapOpenMeteoHourlyChart(data: unknown, widget: Widget): CleanedMetricPa
     .slice(0, 24)
     .filter((_, i) => i % 3 === 0)
     .map((time, i) => ({
-      label: new Date(time).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+      label: new Date(time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       value: obj.hourly!.temperature_2m[i * 3] || 0,
     }));
 
@@ -250,10 +250,10 @@ function mapOpenMeteoHourlyChart(data: unknown, widget: Widget): CleanedMetricPa
 async function mapOpenMeteoCities(_data: unknown, widget: Widget): CleanedMetricPayload {
   const cities = [
     { name: 'New York', lat: 40.71, lon: -74.01 },
-    { name: 'London', lat: 51.51, lon: -0.13 },
+    { name: 'Londres', lat: 51.51, lon: -0.13 },
     { name: 'Tokyo', lat: 35.68, lon: 139.69 },
     { name: 'Sydney', lat: -33.87, lon: 151.21 },
-    { name: 'Dubai', lat: 25.20, lon: 55.27 },
+    { name: 'Dubaï', lat: 25.20, lon: 55.27 },
   ];
 
   const series = await Promise.all(
@@ -270,7 +270,7 @@ async function mapOpenMeteoCities(_data: unknown, widget: Widget): CleanedMetric
 
   return {
     widgetTitle: widget.title,
-    primaryValue: `${cities.length} Cities`,
+    primaryValue: `${cities.length} villes`,
     series,
   };
 }
@@ -288,7 +288,7 @@ function mapRestCountriesPopulation(data: unknown, widget: Widget): CleanedMetri
   return {
     widgetTitle: widget.title,
     primaryValue: `${(totalPop / 1e9).toFixed(2)}B`,
-    unit: 'people',
+    unit: 'habitants',
   };
 }
 
@@ -299,7 +299,7 @@ function mapRestCountriesCount(data: unknown, widget: Widget): CleanedMetricPayl
   return {
     widgetTitle: widget.title,
     primaryValue: arr.length,
-    unit: 'countries',
+    unit: 'pays',
   };
 }
 
@@ -321,7 +321,7 @@ function mapRestCountriesRegionDonut(data: unknown, widget: Widget): CleanedMetr
 
   return {
     widgetTitle: widget.title,
-    primaryValue: `${Object.keys(regionMap).length} Regions`,
+    primaryValue: `${Object.keys(regionMap).length} régions`,
     series,
   };
 }

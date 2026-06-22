@@ -131,7 +131,7 @@ export async function getUserProfile(uid: string): Promise<PulseGridUser | null>
  */
 export async function updateUserName(name: string): Promise<void> {
     const user = auth.currentUser;
-    if (!user) throw new Error('No authenticated user');
+    if (!user) throw new Error("Vous devez être connecté.");
     await updateProfile(user, { displayName: name });
     await setDoc(doc(db, 'users', user.uid), { name }, { merge: true });
 }
@@ -141,7 +141,7 @@ export async function updateUserName(name: string): Promise<void> {
  */
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
     const user = auth.currentUser;
-    if (!user || !user.email) throw new Error('No authenticated user');
+    if (!user || !user.email) throw new Error("Vous devez être connecté.");
 
     // Re-authenticate before password change
     const credential = EmailAuthProvider.credential(user.email, currentPassword);

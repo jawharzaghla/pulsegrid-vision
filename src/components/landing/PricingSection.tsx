@@ -4,28 +4,28 @@ import { Link } from "react-router-dom";
 const plans = [
   {
     name: "Free",
-    price: "$0",
-    period: "forever",
-    features: ["1 Project", "5 Widgets", "10 AI Analyses / day", "Community Support"],
-    cta: "Try Free Demo",
+    price: "0 $",
+    period: "à vie",
+    features: ["1 projet", "5 widgets", "10 analyses IA / jour", "Support communautaire"],
+    cta: "Essayer la démo Free",
     highlighted: false,
     link: "/demo/free",
   },
   {
     name: "Pro",
-    price: "$19",
-    period: "/mo",
-    features: ["10 Projects", "250 Widgets", "100 AI Analyses / day", "Priority Support", "Custom Themes", "Export PDF"],
-    cta: "Try Pro Demo",
+    price: "19 $",
+    period: "/mois",
+    features: ["10 projets", "250 widgets", "100 analyses IA / jour", "Support prioritaire", "Thèmes personnalisés", "Export PDF"],
+    cta: "Essayer la démo Pro",
     highlighted: true,
     link: "/demo/pro",
   },
   {
     name: "Business",
-    price: "$49",
-    period: "/mo",
-    features: ["Unlimited Projects", "Unlimited Widgets", "Unlimited AI Analyses", "Dedicated Support", "SSO & Team Roles", "API Access", "White-label"],
-    cta: "Try Business Demo",
+    price: "49 $",
+    period: "/mois",
+    features: ["Projets illimités", "Widgets illimités", "Analyses IA illimitées", "Support dédié", "SSO et rôles d'équipe", "Accès API", "Marque blanche"],
+    cta: "Essayer la démo Business",
     highlighted: false,
     link: "/demo/business",
   },
@@ -36,9 +36,9 @@ const PricingSection = () => {
     <section id="pricing" className="py-24 relative">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <p className="text-micro text-accent mb-3">PRICING</p>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
-          <p className="text-muted-foreground">No hidden fees. Scale as you grow.</p>
+          <p className="text-micro text-accent mb-3">TARIFS</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Des tarifs simples et transparents</h2>
+          <p className="text-muted-foreground">Aucun frais caché. Vous évoluez à votre rythme.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
@@ -53,7 +53,7 @@ const PricingSection = () => {
             >
               {plan.highlighted && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 gradient-primary rounded-full text-[11px] font-semibold uppercase tracking-wider text-primary-foreground">
-                  Most Popular
+                  Le plus populaire
                 </div>
               )}
 

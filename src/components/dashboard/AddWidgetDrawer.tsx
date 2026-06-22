@@ -40,26 +40,26 @@ interface AddWidgetDrawerProps {
 }
 
 const VIZ_TYPES: { type: VisualizationType; label: string; icon: string }[] = [
-  { type: "kpi-card", label: "KPI Card", icon: "📊" },
-  { type: "line-chart", label: "Line Chart", icon: "📈" },
-  { type: "bar-chart", label: "Bar Chart", icon: "📶" },
-  { type: "area-chart", label: "Area Chart", icon: "🏔️" },
-  { type: "donut-chart", label: "Donut Chart", icon: "🍩" },
-  { type: "data-table", label: "Data Table", icon: "📋" },
+  { type: "kpi-card", label: "Carte KPI", icon: "📊" },
+  { type: "line-chart", label: "Graphique linéaire", icon: "📈" },
+  { type: "bar-chart", label: "Graphique à barres", icon: "📶" },
+  { type: "area-chart", label: "Graphique en aires", icon: "🏔️" },
+  { type: "donut-chart", label: "Graphique en anneau", icon: "🍩" },
+  { type: "data-table", label: "Tableau de données", icon: "📋" },
   { type: "sparkline", label: "Sparkline", icon: "⚡" },
-  { type: "gauge", label: "Gauge", icon: "🎯" },
-  { type: "status", label: "Status", icon: "🟢" },
+  { type: "gauge", label: "Jauge", icon: "🎯" },
+  { type: "status", label: "Statut", icon: "🟢" },
 ];
 
 const AUTH_METHODS = [
-  { value: "none", label: "None" },
-  { value: "api-key", label: "API Key Header" },
-  { value: "bearer", label: "Bearer Token" },
-  { value: "basic", label: "Basic Auth" },
+  { value: "none", label: "Aucune" },
+  { value: "api-key", label: "En-tête de clé API" },
+  { value: "bearer", label: "Jeton Bearer" },
+  { value: "basic", label: "Authentification Basic" },
 ] as const;
 
 const REFRESH_OPTIONS = [
-  { value: "", label: "Manual" },
+  { value: "", label: "Manuel" },
   { value: "30", label: "30s" },
   { value: "60", label: "1 min" },
   { value: "300", label: "5 min" },
@@ -278,7 +278,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
       setUnrefactoredJson(null);
     } catch (err: any) {
       console.error('[AddWidgetDrawer] JSON Refactor Error:', err);
-      setDrawerError({ code: "STEP1_NOT_JSON", message: err.message || "Failed to refactor JSON payload." });
+      setDrawerError({ code: "STEP1_NOT_JSON", message: err.message || "Échec de la restructuration des données JSON." });
       setShowRefactorModal(false);
       setUnrefactoredJson(null);
     }
@@ -508,7 +508,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
         <div className="relative z-10 w-full max-w-lg bg-card border-l border-border h-full flex flex-col animate-slide-in-right">
           {/* Header */}
           <div className="p-6 border-b border-border flex items-center justify-between">
-            <h2 className="text-lg font-bold">Add Widget</h2>
+            <h2 className="text-lg font-bold">Ajouter un widget</h2>
             <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
               <X size={20} />
             </button>
@@ -550,9 +550,9 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
             {step === 0 && (
               <>
                 <div>
-                  <label className="text-micro block mb-2">WIDGET TITLE</label>
+                  <label className="text-micro block mb-2">TITRE DU WIDGET</label>
                   <input
-                    placeholder="Monthly Revenue"
+                    placeholder="Chiffre d'affaires mensuel"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-4 py-2.5 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
@@ -560,7 +560,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 </div>
 
                 <div>
-                  <label className="text-micro block mb-2">API ENDPOINT URL</label>
+                  <label className="text-micro block mb-2">URL DU POINT DE TERMINAISON API</label>
                   <input
                     placeholder="https://api.example.com/v1/data"
                     value={endpointUrl}
@@ -575,7 +575,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 </div>
 
                 <div>
-                  <label className="text-micro block mb-2">AUTHENTICATION</label>
+                  <label className="text-micro block mb-2">AUTHENTIFICATION</label>
                   <select
                     value={authMethod}
                     onChange={(e) => setAuthMethod(e.target.value as Widget["authMethod"])}
@@ -591,7 +591,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 {authMethod === "api-key" && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                     <div>
-                      <label className="text-micro block mb-2">HEADER NAME</label>
+                      <label className="text-micro block mb-2">NOM DE L'EN-TÊTE</label>
                       <input
                         placeholder="X-API-Key"
                         value={apiKeyHeader}
@@ -600,7 +600,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                       />
                     </div>
                     <div>
-                      <label className="text-micro block mb-2">API KEY</label>
+                      <label className="text-micro block mb-2">CLÉ API</label>
                       <input
                         type="password"
                         placeholder="sk-..."
@@ -614,7 +614,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
 
                 {authMethod === "bearer" && (
                   <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="text-micro block mb-2">BEARER TOKEN</label>
+                    <label className="text-micro block mb-2">JETON BEARER</label>
                     <input
                       type="password"
                       placeholder="eyJh..."
@@ -628,7 +628,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 {authMethod === "basic" && (
                   <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                     <div>
-                      <label className="text-micro block mb-2">USERNAME</label>
+                      <label className="text-micro block mb-2">NOM D'UTILISATEUR</label>
                       <input
                         placeholder="admin"
                         value={basicUsername}
@@ -637,7 +637,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                       />
                     </div>
                     <div>
-                      <label className="text-micro block mb-2">PASSWORD</label>
+                      <label className="text-micro block mb-2">MOT DE PASSE</label>
                       <input
                         type="password"
                         placeholder="••••••••"
@@ -652,7 +652,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 {!cryptoKey && authMethod !== "none" && !isDemo && (
                   <div className="px-4 py-3 bg-warning/10 border border-warning/30 rounded-lg text-xs text-warning flex items-center gap-2">
                     <AlertCircle size={14} />
-                    Encryption key not available. Please re-login to enable secure API storage.
+                    Clé de chiffrement indisponible. Veuillez vous reconnecter pour activer le stockage sécurisé des API.
                   </div>
                 )}
 
@@ -663,21 +663,21 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                   className="w-full py-2.5 border border-border hover:border-primary/50 rounded-lg text-body font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
                   {testing ? <Loader2 size={14} className="animate-spin" /> : null}
-                  {testing ? "Testing..." : "Test Connection"}
+                  {testing ? "Test en cours…" : "Tester la connexion"}
                 </button>
 
                 {/* Test result */}
                 {testOk && (
                   <div className="px-4 py-3 rounded-lg text-sm flex items-center gap-2 bg-success/10 text-success border border-success/30">
                     <Check size={14} />
-                    200 OK — API response received
+                    200 OK — réponse de l’API reçue
                   </div>
                 )}
 
                 {/* Raw JSON viewer */}
                 {rawJson && (
                   <div>
-                    <label className="text-micro block mb-2">RAW RESPONSE</label>
+                    <label className="text-micro block mb-2">RÉPONSE BRUTE</label>
                     <pre className="p-4 bg-muted/30 border border-border rounded-lg text-xs text-foreground/80 overflow-auto max-h-48 font-mono whitespace-pre-wrap">
                       {JSON.stringify(rawJson, null, 2)}
                     </pre>
@@ -691,7 +691,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
               <>
                 {/* Read-only raw JSON */}
                 <div>
-                  <label className="text-micro block mb-2">API RESPONSE (READ-ONLY)</label>
+                  <label className="text-micro block mb-2">RÉPONSE DE L'API (LECTURE SEULE)</label>
                   <pre className="p-4 bg-muted/30 border border-border rounded-lg text-xs text-foreground/80 overflow-auto max-h-40 font-mono whitespace-pre-wrap">
                     {JSON.stringify(rawJson, null, 2)}
                   </pre>
@@ -699,7 +699,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
 
                 {/* Natural language description */}
                 <div>
-                  <label className="text-micro block mb-2">WHAT METRIC DO YOU WANT TO TRACK?</label>
+                  <label className="text-micro block mb-2">QUELLE MÉTRIQUE SOUHAITEZ-VOUS SUIVRE ?</label>
                   <input
                     placeholder="ex: le revenu mensuel total, le nombre d'utilisateurs actifs, le taux de conversion"
                     value={userDescription}
@@ -718,7 +718,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                   className="w-full py-3 bg-accent/20 border border-accent/40 hover:bg-accent/30 text-accent rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
                   {extracting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  {extracting ? "Extraction en cours..." : "Extract with AI"}
+                  {extracting ? "Extraction en cours…" : "Extraire avec l'IA"}
                 </button>
 
                 {/* Extracted payload preview card */}
@@ -726,7 +726,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                   <div className="p-5 bg-muted/30 border border-accent/30 rounded-xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
                     <div className="flex items-center gap-2 text-accent text-xs font-semibold">
                       <Check size={14} />
-                      EXTRACTION SUCCESSFUL
+                      EXTRACTION RÉUSSIE
                     </div>
 
                     <div className="text-3xl font-bold text-foreground">
@@ -748,7 +748,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
 
                     {extractedPayload.series && extractedPayload.series.length > 0 && (
                       <div className="pt-2 border-t border-border">
-                        <p className="text-micro mb-2">SERIES DATA ({extractedPayload.series.length} points)</p>
+                        <p className="text-micro mb-2">DONNÉES DE SÉRIE ({extractedPayload.series.length} points)</p>
                         <div className="flex gap-2 flex-wrap">
                           {extractedPayload.series.slice(0, 5).map((s, i) => (
                             <span key={i} className="px-2 py-1 bg-muted/50 rounded text-xs">
@@ -757,7 +757,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                           ))}
                           {extractedPayload.series.length > 5 && (
                             <span className="px-2 py-1 text-xs text-muted-foreground">
-                              +{extractedPayload.series.length - 5} more
+                              +{extractedPayload.series.length - 5} de plus
                             </span>
                           )}
                         </div>
@@ -808,7 +808,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-micro block mb-2">UNIT PREFIX</label>
+                    <label className="text-micro block mb-2">PRÉFIXE D'UNITÉ</label>
                     <input
                       placeholder="$, €"
                       value={unitPrefix}
@@ -817,7 +817,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                     />
                   </div>
                   <div>
-                    <label className="text-micro block mb-2">UNIT SUFFIX</label>
+                    <label className="text-micro block mb-2">SUFFIXE D'UNITÉ</label>
                     <input
                       placeholder="%, k"
                       value={unitSuffix}
@@ -828,7 +828,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 </div>
 
                 <div>
-                  <label className="text-micro block mb-2">DECIMAL PLACES</label>
+                  <label className="text-micro block mb-2">NOMBRE DE DÉCIMALES</label>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setDecimalPlaces(Math.max(0, decimalPlaces - 1))}
@@ -847,7 +847,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 </div>
 
                 <div>
-                  <label className="text-micro block mb-2">REFRESH INTERVAL</label>
+                  <label className="text-micro block mb-2">INTERVALLE D'ACTUALISATION</label>
                   <select
                     value={refreshInterval ?? ""}
                     onChange={(e) => setRefreshInterval(e.target.value ? Number(e.target.value) : null)}
@@ -858,7 +858,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                       const isDisabled = o.value !== "" && (minInt === null || Number(o.value) < minInt);
                       return (
                         <option key={o.value} value={o.value} disabled={isDisabled}>
-                          {o.label} {isDisabled ? "(Pro only)" : ""}
+                          {o.label} {isDisabled ? "(Pro uniquement)" : ""}
                         </option>
                       );
                     })}
@@ -875,7 +875,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 </div>
 
                 <div>
-                  <label className="text-micro block mb-2">COLOR PALETTE</label>
+                  <label className="text-micro block mb-2">PALETTE DE COULEURS</label>
                   <div className="flex gap-2">
                     {COLOR_SWATCHES.map((color) => (
                       <button
@@ -894,7 +894,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                   <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex items-center gap-2 mb-3">
                       <Eye size={14} className="text-muted-foreground" />
-                      <label className="text-micro">LIVE PREVIEW</label>
+                      <label className="text-micro">APERÇU EN DIRECT</label>
                     </div>
                     <div className="p-5 bg-muted/20 border border-border rounded-xl">
                       <p className="text-xs text-muted-foreground mb-1">{title || "Widget"}</p>
@@ -924,7 +924,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 onClick={() => { setStep(step - 1); setDrawerError(null); }}
                 className="px-4 py-2.5 border border-border rounded-lg text-body hover:bg-muted transition-all flex items-center gap-2"
               >
-                <ArrowLeft size={14} /> Back
+                <ArrowLeft size={14} /> Retour
               </button>
             )}
             <div className="flex-1" />
@@ -934,7 +934,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 disabled={!canGoNext()}
                 className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next <ArrowRight size={14} />
+                Suivant <ArrowRight size={14} />
               </button>
             ) : (
               <button
@@ -943,7 +943,7 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
                 className="px-6 py-2.5 bg-accent hover:bg-accent/90 text-accent-foreground font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : null}
-                {saving ? "Adding..." : "Add to Dashboard"}
+                {saving ? "Ajout en cours…" : "Ajouter au tableau de bord"}
               </button>
             )}
           </div>
@@ -961,18 +961,18 @@ const AddWidgetDrawer = ({ projectId, editingWidget, onClose, onWidgetAdded, isD
       <AlertDialog open={showRefactorModal} onOpenChange={setShowRefactorModal}>
         <AlertDialogContent className="bg-card w-[90vw] max-w-md rounded-xl border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Large Payload Detected</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">Données volumineuses détectées</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              The API returned a very large JSON payload which exceeds the AI token limits.
-              Would you like to automatically refactor the data (keep only last 6 months or max 200 items) so you can proceed with extraction?
+              L’API a renvoyé des données JSON très volumineuses qui dépassent les limites de jetons de l’IA.
+              Souhaitez-vous restructurer automatiquement les données (ne conserver que les 6 derniers mois ou 200 éléments au maximum) afin de poursuivre l’extraction ?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 flex gap-3">
             <AlertDialogCancel onClick={handleDeclineRefactor} className="bg-transparent border border-muted hover:bg-muted text-foreground">
-              Decline (May fail)
+              Refuser (peut échouer)
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleAcceptRefactor} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Yes, Refactor Data
+              Oui, restructurer les données
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

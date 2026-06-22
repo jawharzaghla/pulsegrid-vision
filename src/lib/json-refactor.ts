@@ -97,7 +97,7 @@ export function refactorLargeJson(data: unknown): { refactoredData: unknown; was
         // Final brute force if still too big
         if (finalSize > MAX_JSON_CHARS) {
             console.warn('[json-refactor] Payload still > limits. Throwing explicit error to prevent Groq failure.');
-            const error = new Error("Data payload is fundamentally too massive to be processed by AI, even after maximum truncation. Please select a more specific API endpoint that returns less data.");
+            const error = new Error("Les données reçues sont bien trop volumineuses pour être traitées par l'IA, même après un maximum de réduction. Choisissez un point de terminaison plus précis, qui renvoie moins de données.");
             error.name = 'JSONRefactorError';
             throw error;
         }

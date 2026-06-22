@@ -7,10 +7,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-    LogOut, Users, Briefcase, TrendingUp, LayoutDashboard, 
-    MapPin, ShieldAlert, ShieldCheck, UserMinus, UserPlus, 
-    ExternalLink, Search, Filter, MoreVertical, Settings2
+import {
+    LogOut, Users, Briefcase, TrendingUp, LayoutDashboard,
+    MapPin, ShieldAlert, ShieldCheck, UserMinus, UserPlus,
+    ExternalLink, Search, Filter, MoreVertical, Settings2, Trash2, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -69,6 +69,12 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showCreateUser, setShowCreateUser] = useState(false);
+    const [newUserEmail, setNewUserEmail] = useState('');
+    const [newUserName, setNewUserName] = useState('');
+    const [newUserPassword, setNewUserPassword] = useState('');
+    const [newUserTier, setNewUserTier] = useState<'free' | 'pro' | 'business'>('free');
+    const [createBusy, setCreateBusy] = useState(false);
 
     const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -158,6 +164,48 @@ export default function AdminDashboard() {
         }
     };
 
+    const handleCreateUser = async () => {
+        if (!newUserEmail || !newUserPassword) {
+            toast.error('Email et mot de passe requis');
+            return;
+        }
+        setCreateBusy(true);
+        try {
+            const res = await fetch(`${API_BASE}/admin/users`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: newUserEmail, password: newUserPassword, name: newUserName, tier: newUserTier }),
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || 'CREATE_FAILED');
+            }
+            toast.success('Utilisateur cree');
+            setShowCreateUser(false);
+            setNewUserEmail(''); setNewUserName(''); setNewUserPassword(''); setNewUserTier('free');
+            fetchData();
+        } catch (err: any) {
+            toast.error(err.message === 'EMAIL_ALREADY_EXISTS' ? 'Email deja utilise' : 'Echec de la creation');
+        } finally {
+            setCreateBusy(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, email: string) => {
+        if (!window.confirm(`Supprimer definitivement ${email} et tous ses projets ?`)) return;
+        try {
+            const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+            });
+            if (!res.ok) throw new Error('DELETE_FAILED');
+            toast.success('Utilisateur supprime');
+            fetchData();
+        } catch (err) {
+            toast.error('Echec de la suppression');
+        }
+    };
+
     const logout = async () => {
         await handleSignOut();
         navigate('/login');
@@ -172,7 +220,7 @@ export default function AdminDashboard() {
                     <div className="absolute inset-2 border-4 border-[#00C9A7]/20 rounded-full"></div>
                     <div className="absolute inset-2 border-4 border-b-[#00C9A7] border-t-transparent border-r-transparent border-l-transparent rounded-full animate-spin-slow"></div>
                 </div>
-                <p className="text-[#6B7280] animate-pulse font-mono tracking-widest text-xs">PULSEGRID SYSTEM INITIALIZING...</p>
+                <p className="text-[#6B7280] animate-pulse font-mono tracking-widest text-xs">INITIALISATION DU SYSTÈME PULSEGRID...</p>
             </div>
         );
     }
@@ -209,7 +257,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex flex-col">
                             <span className="font-black text-xl tracking-tighter leading-none">PULSEGRID</span>
-                            <span className="text-[10px] text-[#00C9A7] font-mono tracking-[0.2em] leading-none mt-1 uppercase">Control Center</span>
+                            <span className="text-[10px] text-[#00C9A7] font-mono tracking-[0.2em] leading-none mt-1 uppercase">Centre de contrôle</span>
                         </div>
                     </div>
                     <Badge variant="outline" className="text-[#FF4B4B] border-[#FF4B4B]/30 bg-[#FF4B4B]/10 font-mono text-[10px] py-0.5">MASTER_ADMIN</Badge>
@@ -221,13 +269,13 @@ export default function AdminDashboard() {
                         <Input 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search users or projects..." 
+                            placeholder="Rechercher des utilisateurs ou des projets..."
                             className="bg-[#0F0F1A]/50 border-[#2A2A45] pl-10 w-64 focus:ring-[#7B2FBE]"
                         />
                     </div>
                     <Button variant="ghost" className="text-[#6B7280] hover:text-white hover:bg-[#2A2A45] rounded-xl px-4" onClick={logout}>
                         <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
+                        Se déconnecter
                     </Button>
                 </div>
             </header>
@@ -236,15 +284,15 @@ export default function AdminDashboard() {
                 <Tabs defaultValue="overview" className="space-y-8" onValueChange={setActiveTab}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <TabsList className="bg-[#1A1A2E] border border-[#2A2A45] p-1 h-12">
-                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#7B2FBE] data-[state=active]:text-white h-full px-6 transition-all">Overview</TabsTrigger>
-                            <TabsTrigger value="users" className="data-[state=active]:bg-[#7B2FBE] data-[state=active]:text-white h-full px-6 transition-all">Users Management</TabsTrigger>
-                            <TabsTrigger value="projects" className="data-[state=active]:bg-[#7B2FBE] data-[state=active]:text-white h-full px-6 transition-all">Global Projects</TabsTrigger>
+                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#7B2FBE] data-[state=active]:text-white h-full px-6 transition-all">Vue d'ensemble</TabsTrigger>
+                            <TabsTrigger value="users" className="data-[state=active]:bg-[#7B2FBE] data-[state=active]:text-white h-full px-6 transition-all">Gestion des utilisateurs</TabsTrigger>
+                            <TabsTrigger value="projects" className="data-[state=active]:bg-[#7B2FBE] data-[state=active]:text-white h-full px-6 transition-all">Projets globaux</TabsTrigger>
                         </TabsList>
                         
                         <div className="flex items-center gap-2">
                             <Button variant="outline" className="bg-transparent border-[#2A2A45] hover:bg-[#2A2A45] text-white" onClick={fetchData}>
                                 <TrendingUp className="w-4 h-4 mr-2" />
-                                Refresh Data
+                                Actualiser les données
                             </Button>
                         </div>
                     </div>
@@ -253,10 +301,10 @@ export default function AdminDashboard() {
                         {/* KPI Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[
-                                { label: 'Total Users', value: kpis?.totalUsers, icon: Users, color: '#7B2FBE' },
-                                { label: 'Active Projects', value: kpis?.totalActiveProjects, icon: Briefcase, color: '#00C9A7' },
-                                { label: 'New Users (30d)', value: kpis?.newUsersLast30Days, icon: TrendingUp, color: '#7B2FBE' },
-                                { label: 'Monthly Revenue', value: `$${((kpis?.monthlyRecurringRevenue || 0) / 100).toLocaleString()}`, icon: TrendingUp, color: '#00C9A7' }
+                                { label: 'Total des utilisateurs', value: kpis?.totalUsers, icon: Users, color: '#7B2FBE' },
+                                { label: 'Projets actifs', value: kpis?.totalActiveProjects, icon: Briefcase, color: '#00C9A7' },
+                                { label: 'Nouveaux utilisateurs (30 j)', value: kpis?.newUsersLast30Days, icon: TrendingUp, color: '#7B2FBE' },
+                                { label: 'Revenus mensuels', value: `$${((kpis?.monthlyRecurringRevenue || 0) / 100).toLocaleString()}`, icon: TrendingUp, color: '#00C9A7' }
                             ].map((kpi, idx) => (
                                 <Card key={idx} className="bg-[#1A1A2E] border-[#2A2A45] hover:border-[#7B2FBE]/50 transition-all group relative overflow-hidden">
                                     <CardContent className="p-6">
@@ -265,7 +313,7 @@ export default function AdminDashboard() {
                                                 <kpi.icon className="w-6 h-6" style={{ color: kpi.color }} />
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-[10px] font-mono text-[#6B7280] uppercase tracking-tighter">Live Monitor</span>
+                                                <span className="text-[10px] font-mono text-[#6B7280] uppercase tracking-tighter">Suivi en direct</span>
                                                 <div className="flex items-center justify-end gap-1 mt-1">
                                                     <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse"></div>
                                                     <span className="text-[8px] text-green-500/80 font-mono">STABLE</span>
@@ -287,9 +335,9 @@ export default function AdminDashboard() {
                                     <div>
                                         <CardTitle className="text-xl font-bold flex items-center gap-2">
                                             <TrendingUp className="w-5 h-5 text-[#00C9A7]" />
-                                            Growth Analytics
+                                            Analyse de la croissance
                                         </CardTitle>
-                                        <CardDescription className="text-[#6B7280]">Daily registration volume and trend forecasting</CardDescription>
+                                        <CardDescription className="text-[#6B7280]">Volume quotidien des inscriptions et prévision des tendances</CardDescription>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
@@ -320,9 +368,9 @@ export default function AdminDashboard() {
                                 <CardHeader>
                                     <CardTitle className="text-xl font-bold flex items-center gap-2">
                                         <ShieldCheck className="w-5 h-5 text-[#7B2FBE]" />
-                                        Tier Mix
+                                        Répartition des offres
                                     </CardTitle>
-                                    <CardDescription className="text-[#6B7280]">Revenue distribution across subscription tiers</CardDescription>
+                                    <CardDescription className="text-[#6B7280]">Répartition des revenus par offre d'abonnement</CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="h-[300px] w-full">
@@ -366,7 +414,7 @@ export default function AdminDashboard() {
                                 <CardHeader>
                                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                                         <MapPin className="w-4 h-4 text-[#00C9A7]" />
-                                        Geographic Presence
+                                        Présence géographique
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -392,7 +440,7 @@ export default function AdminDashboard() {
                                 <CardHeader>
                                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4 text-[#7B2FBE]" />
-                                        Conversion Analytics
+                                        Analyse des conversions
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="flex flex-col justify-center items-center h-full pt-0">
@@ -408,7 +456,7 @@ export default function AdminDashboard() {
                                             <span className="text-[8px] text-[#6B7280] font-mono">CONVERSION</span>
                                         </div>
                                     </div>
-                                    <p className="text-center text-[#6B7280] text-xs mt-4">Free to Paid subscriber ratio</p>
+                                    <p className="text-center text-[#6B7280] text-xs mt-4">Ratio d'abonnés Free vers payants</p>
                                 </CardContent>
                              </Card>
 
@@ -416,14 +464,14 @@ export default function AdminDashboard() {
                                 <CardHeader>
                                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4 text-[#00C9A7]" />
-                                        System Health
+                                        État du système
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
                                         <div className="p-3 bg-[#0F0F1A] border border-[#2A2A45] rounded-xl">
                                             <div className="flex justify-between items-center mb-1">
-                                                <span className="text-[10px] text-[#6B7280]">AI PROXY LATENCY</span>
+                                                <span className="text-[10px] text-[#6B7280]">LATENCE DU PROXY IA</span>
                                                 <span className="text-[10px] text-[#00C9A7] font-mono">142ms</span>
                                             </div>
                                             <div className="h-1 bg-[#2A2A45] rounded-full overflow-hidden">
@@ -432,7 +480,7 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="p-3 bg-[#0F0F1A] border border-[#2A2A45] rounded-xl">
                                             <div className="flex justify-between items-center mb-1">
-                                                <span className="text-[10px] text-[#6B7280]">STORAGE LOAD</span>
+                                                <span className="text-[10px] text-[#6B7280]">CHARGE DU STOCKAGE</span>
                                                 <span className="text-[10px] text-[#7B2FBE] font-mono">24%</span>
                                             </div>
                                             <div className="h-1 bg-[#2A2A45] rounded-full overflow-hidden">
@@ -449,22 +497,53 @@ export default function AdminDashboard() {
                         <Card className="bg-[#1A1A2E] border-[#2A2A45]">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle>Global User Registry</CardTitle>
-                                    <CardDescription>Manage all {users.length} accounts registered on PulseGrid</CardDescription>
+                                    <CardTitle>Registre global des utilisateurs</CardTitle>
+                                    <CardDescription>Gérez l'ensemble des {users.length} comptes enregistrés sur PulseGrid</CardDescription>
                                 </div>
-                                <Badge variant="outline" className="font-mono bg-[#7B2FBE]/10 text-[#7B2FBE] border-[#7B2FBE]/20">
-                                    {filteredUsers.length} Results
-                                </Badge>
+                                <div className="flex items-center gap-3">
+                                    <Badge variant="outline" className="font-mono bg-[#7B2FBE]/10 text-[#7B2FBE] border-[#7B2FBE]/20">
+                                        {filteredUsers.length} résultats
+                                    </Badge>
+                                    <Button onClick={() => setShowCreateUser(true)} className="bg-[#7B2FBE] hover:bg-[#7B2FBE]/80 text-white">
+                                        <UserPlus className="w-4 h-4 mr-2" /> Ajouter un utilisateur
+                                    </Button>
+                                </div>
                             </CardHeader>
+                            {showCreateUser && (
+                                <div className="px-6 pb-4">
+                                    <div className="bg-[#0F0F1A] border border-[#2A2A45] rounded-xl p-5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="font-bold flex items-center gap-2"><UserPlus className="w-4 h-4 text-[#7B2FBE]" /> Nouvel utilisateur</h4>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowCreateUser(false)}><X className="w-4 h-4" /></Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <Input placeholder="Email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} className="bg-[#0F0F1A] border-[#2A2A45]" />
+                                            <Input placeholder="Nom complet" value={newUserName} onChange={e => setNewUserName(e.target.value)} className="bg-[#0F0F1A] border-[#2A2A45]" />
+                                            <Input type="password" placeholder="Mot de passe initial" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} className="bg-[#0F0F1A] border-[#2A2A45]" />
+                                            <select value={newUserTier} onChange={e => setNewUserTier(e.target.value as any)} className="bg-[#0F0F1A] border border-[#2A2A45] rounded-md px-3 text-sm">
+                                                <option value="free">Tier : Free</option>
+                                                <option value="pro">Tier : Pro</option>
+                                                <option value="business">Tier : Business</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex justify-end gap-2 mt-4">
+                                            <Button variant="ghost" onClick={() => setShowCreateUser(false)} className="text-[#6B7280]">Annuler</Button>
+                                            <Button onClick={handleCreateUser} disabled={createBusy} className="bg-[#00C9A7] hover:bg-[#00C9A7]/80 text-[#0F0F1A] font-bold">
+                                                {createBusy ? 'Creation...' : 'Creer le compte'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             <CardContent>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr className="border-b border-[#2A2A45] text-[#6B7280] text-xs uppercase tracking-widest">
-                                                <th className="py-4 px-4 font-medium">User</th>
-                                                <th className="py-4 px-4 font-medium">Account Details</th>
-                                                <th className="py-4 px-4 font-medium">Subscription</th>
-                                                <th className="py-4 px-4 font-medium text-right">Access Control</th>
+                                                <th className="py-4 px-4 font-medium">Utilisateur</th>
+                                                <th className="py-4 px-4 font-medium">Détails du compte</th>
+                                                <th className="py-4 px-4 font-medium">Abonnement</th>
+                                                <th className="py-4 px-4 font-medium text-right">Contrôle d'accès</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-sm">
@@ -476,7 +555,7 @@ export default function AdminDashboard() {
                                                                 {user.name?.[0] || user.email[0].toUpperCase()}
                                                             </div>
                                                             <div className="flex flex-col">
-                                                                <span className="font-bold">{user.name || 'Anonymous User'}</span>
+                                                                <span className="font-bold">{user.name || 'Utilisateur anonyme'}</span>
                                                                 <span className="text-xs text-[#6B7280]">{user.email}</span>
                                                             </div>
                                                         </div>
@@ -488,7 +567,7 @@ export default function AdminDashboard() {
                                                                 <span className="text-[10px] text-[#6B7280] font-mono truncate max-w-[100px]">{user.id}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] text-[#6B7280] font-mono">SINCE:</span>
+                                                                <span className="text-[10px] text-[#6B7280] font-mono">DEPUIS :</span>
                                                                 <span className="text-[10px] text-[#6B7280] font-mono">{new Date(user.createdAt).toLocaleDateString()}</span>
                                                             </div>
                                                         </div>
@@ -508,7 +587,7 @@ export default function AdminDashboard() {
                                                             </div>
                                                             <div className="flex items-center gap-1">
                                                                 <div className={`w-1.5 h-1.5 rounded-full ${user.tier === 'free' ? 'bg-[#6B7280]' : user.tier === 'pro' ? 'bg-[#7B2FBE]' : 'bg-[#00C9A7]'}`}></div>
-                                                                <span className="text-[10px] uppercase font-bold text-[#6B7280] tracking-wider">{user.tier} Tier</span>
+                                                                <span className="text-[10px] uppercase font-bold text-[#6B7280] tracking-wider">Offre {user.tier}</span>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -521,7 +600,7 @@ export default function AdminDashboard() {
                                                                     onClick={() => handleBanUser(user.id, false)}
                                                                 >
                                                                     <ShieldCheck className="w-4 h-4 mr-2" />
-                                                                    Unban
+                                                                    Réactiver
                                                                 </Button>
                                                             ) : (
                                                                 <Button 
@@ -530,7 +609,7 @@ export default function AdminDashboard() {
                                                                     onClick={() => handleBanUser(user.id, true)}
                                                                 >
                                                                     <ShieldAlert className="w-4 h-4 mr-2" />
-                                                                    Ban
+                                                                    Bannir
                                                                 </Button>
                                                             )}
                                                             <DropdownMenu>
@@ -540,11 +619,18 @@ export default function AdminDashboard() {
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end" className="bg-[#1A1A2E] border-[#2A2A45] text-white">
-                                                                    <DropdownMenuLabel>Account Actions</DropdownMenuLabel>
+                                                                    <DropdownMenuLabel>Actions sur le compte</DropdownMenuLabel>
                                                                     <DropdownMenuSeparator className="bg-[#2A2A45]" />
-                                                                    <DropdownMenuItem className="focus:bg-[#2A2A45] focus:text-white cursor-pointer">View Details</DropdownMenuItem>
-                                                                    <DropdownMenuItem className="focus:bg-[#2A2A45] focus:text-white cursor-pointer">Login as User</DropdownMenuItem>
-                                                                    <DropdownMenuItem className="focus:bg-[#FF4B4B]/20 focus:text-[#FF4B4B] text-[#FF4B4B] cursor-pointer">Force Reset Password</DropdownMenuItem>
+                                                                    <DropdownMenuItem className="focus:bg-[#2A2A45] focus:text-white cursor-pointer">Voir les détails</DropdownMenuItem>
+                                                                    <DropdownMenuItem className="focus:bg-[#2A2A45] focus:text-white cursor-pointer">Se connecter en tant qu'utilisateur</DropdownMenuItem>
+                                                                    <DropdownMenuItem className="focus:bg-[#FF4B4B]/20 focus:text-[#FF4B4B] text-[#FF4B4B] cursor-pointer">Forcer la réinitialisation du mot de passe</DropdownMenuItem>
+                                                                    <DropdownMenuSeparator className="bg-[#2A2A45]" />
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleDeleteUser(user.id, user.email)}
+                                                                        className="focus:bg-[#FF4B4B]/20 focus:text-[#FF4B4B] text-[#FF4B4B] cursor-pointer"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4 mr-2" /> Supprimer l'utilisateur
+                                                                    </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         </div>
@@ -562,11 +648,11 @@ export default function AdminDashboard() {
                         <Card className="bg-[#1A1A2E] border-[#2A2A45]">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <div>
-                                    <CardTitle>Platform Project Hub</CardTitle>
-                                    <CardDescription>Monitor every dashboard and workspace created by PulseGrid users</CardDescription>
+                                    <CardTitle>Centre des projets de la plateforme</CardTitle>
+                                    <CardDescription>Surveillez chaque tableau de bord et espace de travail créé par les utilisateurs de PulseGrid</CardDescription>
                                 </div>
                                 <Badge variant="outline" className="font-mono bg-[#00C9A7]/10 text-[#00C9A7] border-[#00C9A7]/20">
-                                    {filteredProjects.length} Projects Total
+                                    {filteredProjects.length} projets au total
                                 </Badge>
                             </CardHeader>
                             <CardContent>
@@ -596,11 +682,11 @@ export default function AdminDashboard() {
                                                     <h4 className="font-bold text-lg truncate">{project.name}</h4>
                                                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#2A2A45]">
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-mono">Owner ID</span>
+                                                            <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-mono">ID propriétaire</span>
                                                             <span className="text-xs font-mono text-[#7B2FBE] truncate max-w-[120px]">{project.userId}</span>
                                                         </div>
                                                         <div className="text-right flex flex-col">
-                                                            <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-mono">Deployment</span>
+                                                            <span className="text-[10px] text-[#6B7280] uppercase tracking-wider font-mono">Déploiement</span>
                                                             <span className="text-xs">{new Date(project.createdAt).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
@@ -609,7 +695,7 @@ export default function AdminDashboard() {
                                                         onClick={() => navigate(`/app/projects/${project.id}`)}
                                                     >
                                                         <LayoutDashboard className="w-4 h-4 mr-2" />
-                                                        Master Open Dashboard
+                                                        Ouvrir le tableau de bord (admin)
                                                     </Button>
                                                 </div>
                                             </CardContent>

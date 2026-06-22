@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
             <div className="min-h-screen flex items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-4">
                     <Hexagon size={40} className="text-primary fill-primary/20 animate-pulse" />
-                    <p className="text-sm text-muted-foreground">Loading PulseGrid...</p>
+                    <p className="text-sm text-muted-foreground">Chargement de PulseGrid...</p>
                 </div>
             </div>
         );

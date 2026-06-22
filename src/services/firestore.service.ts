@@ -119,7 +119,7 @@ export async function deleteProject(projectId: string): Promise<void> {
  */
 export async function addWidget(projectId: string, widget: Omit<Widget, 'id' | 'projectId'>): Promise<void> {
     const project = await getProject(projectId);
-    if (!project) throw new Error('Project not found');
+    if (!project) throw new Error("Projet introuvable.");
 
     const newWidget: Widget = {
         ...widget,
@@ -140,7 +140,7 @@ export async function addWidget(projectId: string, widget: Omit<Widget, 'id' | '
  */
 export async function updateWidget(projectId: string, widgetId: string, data: Partial<Widget>): Promise<void> {
     const project = await getProject(projectId);
-    if (!project) throw new Error('Project not found');
+    if (!project) throw new Error("Projet introuvable.");
 
     const updatedWidgets = project.widgets.map((w) =>
         w.id === widgetId ? { ...w, ...data } : w
@@ -157,7 +157,7 @@ export async function updateWidget(projectId: string, widgetId: string, data: Pa
  */
 export async function deleteWidget(projectId: string, widgetId: string): Promise<void> {
     const project = await getProject(projectId);
-    if (!project) throw new Error('Project not found');
+    if (!project) throw new Error("Projet introuvable.");
 
     const updatedWidgets = project.widgets.filter((w) => w.id !== widgetId);
     const updatedLayout = project.layout.filter((l) => l.widgetId !== widgetId);
@@ -209,7 +209,7 @@ export async function updateWidgetCache(
     payload: CleanedMetricPayload
 ): Promise<void> {
     const project = await getProject(projectId);
-    if (!project) throw new Error('Project not found');
+    if (!project) throw new Error("Projet introuvable.");
 
     const updatedWidgets = project.widgets.map((w) =>
         w.id === widgetId

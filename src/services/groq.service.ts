@@ -53,7 +53,7 @@ export async function analyzeWithAI(request: AnalysisRequest): Promise<AIRespons
     });
 
     if (res.status === 429) {
-        throw new AIError('RATE_LIMITED', 'AI rate limit reached. Upgrade to Pro for more analyses.');
+        throw new AIError('RATE_LIMITED', "Limite de requêtes IA atteinte. Passez à Pro pour davantage d'analyses.");
     }
 
     if (!res.ok) {
@@ -64,7 +64,7 @@ export async function analyzeWithAI(request: AnalysisRequest): Promise<AIRespons
         } catch {
             details = '';
         }
-        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}${details}`);
+        throw new AIError('UNAVAILABLE', `Erreur du service IA : ${res.status}${details}`);
     }
 
     return res.json();
@@ -91,7 +91,7 @@ export async function callSalesChatbot(
         } catch {
             details = '';
         }
-        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}${details}`);
+        throw new AIError('UNAVAILABLE', `Erreur du service IA : ${res.status}${details}`);
     }
 
     return res.json();
@@ -125,7 +125,7 @@ export async function extractWithAI(
     }
 
     if (!res.ok) {
-        throw new AIError('UNAVAILABLE', `AI service error: ${res.status}`);
+        throw new AIError('UNAVAILABLE', `Erreur du service IA : ${res.status}`);
     }
 
     const payload: CleanedMetricPayload = await res.json();

@@ -1,12 +1,12 @@
 import { Globe, Brain, GripVertical, ShieldCheck, FolderOpen, RefreshCw } from "lucide-react";
 
 const features = [
-  { icon: Globe, title: "Any REST API", desc: "Connect to any endpoint — JSON, GraphQL, or webhooks. We handle the rest." },
-  { icon: Brain, title: "AI-Powered Analysis", desc: "Groq + Llama models generate insights, summaries, and anomaly alerts." },
-  { icon: GripVertical, title: "Drag & Drop Dashboard", desc: "Build your view with drag-and-drop widgets on a flexible grid canvas." },
-  { icon: ShieldCheck, title: "Encrypted Credentials", desc: "API keys and tokens are encrypted at rest with AES-256 security." },
-  { icon: FolderOpen, title: "Multi-Project", desc: "Manage multiple businesses, clients, or products from one account." },
-  { icon: RefreshCw, title: "Real-time Refresh", desc: "Set custom refresh intervals per widget. Always see live metrics." },
+  { icon: Globe, title: "N'importe quelle API REST", desc: "JSON, GraphQL ou webhooks : connectez le point d'accès que vous voulez. On s'occupe du reste." },
+  { icon: Brain, title: "Analyse par IA", desc: "Les modèles Groq et Llama génèrent des analyses, des résumés et des alertes d'anomalie." },
+  { icon: GripVertical, title: "Tableau de bord en glisser-déposer", desc: "Composez votre vue en faisant glisser des widgets sur une grille libre." },
+  { icon: ShieldCheck, title: "Identifiants chiffrés", desc: "Vos clés API et vos jetons sont chiffrés au repos en AES-256." },
+  { icon: FolderOpen, title: "Multi-projets", desc: "Pilotez plusieurs activités, clients ou produits depuis un seul compte." },
+  { icon: RefreshCw, title: "Actualisation en temps réel", desc: "Choisissez la fréquence d'actualisation de chaque widget. Vos chiffres restent toujours à jour." },
 ];
 
 const FeaturesSection = () => {
@@ -14,10 +14,10 @@ const FeaturesSection = () => {
     <section id="features" className="py-24 relative">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <p className="text-micro text-accent mb-3">FEATURES</p>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything you need to see the full picture</h2>
+          <p className="text-micro text-accent mb-3">FONCTIONNALITÉS</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Tout ce qu'il faut pour avoir une vue d'ensemble</h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            A complete toolkit for connecting, visualizing, and understanding your business data.
+            De quoi connecter, visualiser et comprendre les données de votre activité, sans rien de superflu.
           </p>
         </div>
 

@@ -97,23 +97,23 @@ const Projects = () => {
   const getTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 60) return `il y a ${minutes} min`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hours ago`;
+    if (hours < 24) return `il y a ${hours} h`;
     const days = Math.floor(hours / 24);
-    return `${days} days ago`;
+    return `il y a ${days} jours`;
   };
 
   return (
     <div className="p-8">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">My Projects</h1>
+        <h1 className="text-2xl font-bold">Mes projets</h1>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
-              placeholder="Search projects..."
+              placeholder="Rechercher un projet…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 bg-muted/50 border border-border rounded-lg text-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-64 transition-all"
@@ -131,7 +131,7 @@ const Projects = () => {
             }}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all text-body"
           >
-            <Plus size={16} /> New Project
+            <Plus size={16} /> Nouveau projet
           </button>
         </div>
       </div>
@@ -146,12 +146,12 @@ const Projects = () => {
       {/* Empty state */}
       {!loading && projects.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-muted-foreground text-body mb-4">No projects yet. Create your first one!</p>
+          <p className="text-muted-foreground text-body mb-4">Aucun projet pour l'instant. Créez le premier !</p>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg transition-all text-body"
           >
-            <Plus size={16} /> New Project
+            <Plus size={16} /> Nouveau projet
           </button>
         </div>
       )}
@@ -171,7 +171,7 @@ const Projects = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{project.name}</h3>
-                  <p className="text-body text-muted-foreground line-clamp-2 mt-1">{project.description || "No description"}</p>
+                  <p className="text-body text-muted-foreground line-clamp-2 mt-1">{project.description || "Aucune description"}</p>
                 </div>
               </div>
 
@@ -188,7 +188,7 @@ const Projects = () => {
             className="border-2 border-dashed border-border rounded-xl p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-all min-h-[160px] h-full"
           >
             <Plus size={24} />
-            <span className="text-body font-medium">Add a project</span>
+            <span className="text-body font-medium">Ajouter un projet</span>
           </button>
         </div>
       )}
@@ -198,7 +198,7 @@ const Projects = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm" onClick={() => setShowModal(false)}>
           <div className="glass-strong rounded-2xl p-8 w-full max-w-md card-shadow-lg animate-fade-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">New Project</h2>
+              <h2 className="text-xl font-bold">Nouveau projet</h2>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
                 <X size={20} />
               </button>
@@ -206,9 +206,9 @@ const Projects = () => {
 
             <form className="space-y-4" onSubmit={handleCreate}>
               <div>
-                <label className="text-micro block mb-2">PROJECT NAME</label>
+                <label className="text-micro block mb-2">NOM DU PROJET</label>
                 <input
-                  placeholder="My Dashboard"
+                  placeholder="Mon tableau de bord"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   required
@@ -218,7 +218,7 @@ const Projects = () => {
               <div>
                 <label className="text-micro block mb-2">DESCRIPTION</label>
                 <textarea
-                  placeholder="What's this project for?"
+                  placeholder="À quoi sert ce projet ?"
                   rows={2}
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
@@ -242,7 +242,7 @@ const Projects = () => {
                 </div>
               </div>
               <div>
-                <label className="text-micro block mb-2">ACCENT COLOR</label>
+                <label className="text-micro block mb-2">COULEUR D'ACCENT</label>
                 <div className="flex gap-2">
                   {accentColors.map((c, i) => (
                     <button
@@ -260,10 +260,10 @@ const Projects = () => {
                 disabled={creating || !newName}
                 className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {creating ? "Creating..." : "Create Project"}
+                {creating ? "Création…" : "Créer le projet"}
               </button>
               <button type="button" onClick={() => setShowModal(false)} className="w-full text-center text-body text-muted-foreground hover:text-foreground transition-colors">
-                Cancel
+                Annuler
               </button>
             </form>
           </div>

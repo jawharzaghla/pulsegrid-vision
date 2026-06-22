@@ -41,11 +41,11 @@ const WidgetActions = ({ onEdit, onDelete }: WidgetActionProps) => (
     <DropdownMenuContent align="end" className="w-40 glass border-border shadow-xl">
       <DropdownMenuItem onClick={onEdit} className="gap-2 cursor-pointer">
         <Edit3 size={14} />
-        <span>Edit Widget</span>
+        <span>Modifier le widget</span>
       </DropdownMenuItem>
       <DropdownMenuItem onClick={onDelete} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
         <Trash2 size={14} />
-        <span>Delete Widget</span>
+        <span>Supprimer le widget</span>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
@@ -78,7 +78,7 @@ const KPICard = memo(forwardRef<HTMLDivElement, KPICardProps & React.HTMLAttribu
       <div className="flex-1 flex flex-col justify-center">
         <p className="text-3xl font-bold mb-2">{value}</p>
         <div className="flex items-center justify-between">
-          <span className={`text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>{change} vs last month</span>
+          <span className={`text-xs font-medium ${positive ? "text-success" : "text-destructive"}`}>{change} vs mois dernier</span>
         </div>
       </div>
     </div>
@@ -122,7 +122,7 @@ const WidgetErrorCard = memo(forwardRef<HTMLDivElement, { error: WidgetError; on
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <AlertTriangle size={16} className="text-destructive" />
-          <p className="text-sm font-medium text-destructive">Widget Error</p>
+          <p className="text-sm font-medium text-destructive">Erreur du widget</p>
         </div>
         <WidgetActions onEdit={onEdit} onDelete={onDelete} />
       </div>
@@ -244,7 +244,7 @@ const Dashboard = () => {
   };
 
   const handleDeleteWidget = async (widgetId: string) => {
-    if (!id || !window.confirm("Are you sure you want to delete this widget?")) return;
+    if (!id || !window.confirm("Voulez-vous vraiment supprimer ce widget ?")) return;
     try {
       await deleteWidget(id, widgetId);
       loadProject();
@@ -279,8 +279,8 @@ const Dashboard = () => {
 
   const timeAgo = () => {
     const diff = Math.floor((Date.now() - lastRefreshed.getTime()) / 60000);
-    if (diff < 1) return "just now";
-    return `${diff} min ago`;
+    if (diff < 1) return "à l'instant";
+    return `il y a ${diff} min`;
   };
 
   const exportToPDF = async () => {
@@ -342,7 +342,7 @@ const Dashboard = () => {
         pdf.text(`${project.emoji} ${project.name}`, MARGIN, MARGIN + 10);
         pdf.setFontSize(9);
         pdf.setTextColor(150, 150, 150);
-        pdf.text('PulseGrid Vision — Dashboard Report', A4_W - MARGIN, MARGIN + 10, { align: 'right' });
+        pdf.text('PulseGrid Vision — Rapport du tableau de bord', A4_W - MARGIN, MARGIN + 10, { align: 'right' });
 
         // Horizontal separator
         pdf.setDrawColor(60, 60, 70);
@@ -352,8 +352,8 @@ const Dashboard = () => {
         // Footer
         pdf.setFontSize(8);
         pdf.setTextColor(120, 120, 120);
-        const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        pdf.text(`Generated on ${now}`, MARGIN, A4_H - MARGIN + 4);
+        const now = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+        pdf.text(`Généré le ${now}`, MARGIN, A4_H - MARGIN + 4);
         pdf.text(`Page ${pageNum} / ${totalPages}`, A4_W - MARGIN, A4_H - MARGIN + 4, { align: 'right' });
       };
 
@@ -419,7 +419,7 @@ const Dashboard = () => {
     );
   }
 
-  const projectName = project?.name || "Dashboard";
+  const projectName = project?.name || "Tableau de bord";
   const projectEmoji = project?.emoji || "⚡";
   const hasWidgets = project && project.widgets.length > 0;
 
@@ -444,7 +444,7 @@ const Dashboard = () => {
             className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Updated {timeAgo()}</span>
+            <span className="hidden sm:inline">Actualisé {timeAgo()}</span>
             <span className="sm:hidden">{timeAgo()}</span>
           </button>
           <Link to={`/app/projects/${id}/settings`} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -456,19 +456,19 @@ const Dashboard = () => {
             className="px-3 py-1.5 border border-border hover:border-primary/50 rounded-lg text-body text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 disabled:opacity-50"
           >
             {isExporting ? <RefreshCw size={14} className="animate-spin" /> : <FileDown size={14} />}
-            <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export PDF"}</span>
+            <span className="hidden sm:inline">{isExporting ? "Export en cours…" : "Exporter en PDF"}</span>
             {!isExporting && <span className="sm:hidden">PDF</span>}
           </button>
           <button onClick={() => setShowAI(true)} className="px-3 py-1.5 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent rounded-lg text-body font-medium transition-all flex items-center gap-2">
-            <Sparkles size={14} /> 
-            <span className="hidden sm:inline">AI Brief</span>
-            <span className="sm:hidden">AI</span>
+            <Sparkles size={14} />
+            <span className="hidden sm:inline">Synthèse IA</span>
+            <span className="sm:hidden">IA</span>
           </button>
           <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
           <button
             onClick={() => setShowGridLines(!showGridLines)}
             className={`p-2 rounded-lg transition-colors border ${showGridLines ? 'bg-muted border-primary/50 text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
-            title="Toggle Grid Lines"
+            title="Afficher/masquer la grille"
           >
             {showGridLines ? <Grid size={18} /> : <EyeOff size={18} />}
           </button>
@@ -482,15 +482,15 @@ const Dashboard = () => {
           <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
             <Plus size={32} className="text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold mb-3">No widgets yet</h2>
+          <h2 className="text-2xl font-bold mb-3">Aucun widget pour l’instant</h2>
           <p className="text-muted-foreground text-body max-w-sm mb-8">
-            Connect your favorite APIs and start visualizing your data. Your dashboard is ready for your first widget.
+            Connectez vos API préférées et commencez à visualiser vos données. Votre tableau de bord est prêt à accueillir votre premier widget.
           </p>
           <button
             onClick={handleAddWidget}
             className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95"
           >
-            <Plus size={18} /> Add Your First Widget
+            <Plus size={18} /> Ajouter votre premier widget
           </button>
         </div>
       ) : (
@@ -528,7 +528,7 @@ const Dashboard = () => {
                 const vizType = widget.visualization;
 
                 const renderVisualization = () => {
-                  if (!payload) return <div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>;
+                  if (!payload) return <div className="flex items-center justify-center h-full text-muted-foreground">Chargement…</div>;
 
                   // KPI fallback if series is missing but chart requested
                   if (vizType !== 'kpi-card' && (!payload.series || payload.series.length === 0)) {

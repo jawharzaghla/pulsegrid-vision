@@ -19,10 +19,10 @@ export function UpgradeModal({ isOpen, onClose, title, description }: UpgradeMod
             <DialogContent className="sm:max-w-[600px] bg-pg-surface border-pg-border text-white">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold text-center mb-2">
-                        {title || "Upgrade Your Plan"}
+                        {title || "Faites évoluer votre offre"}
                     </DialogTitle>
                     <DialogDescription className="text-center text-pg-muted">
-                        {description || "Unlock more projects, widgets, and AI analyses."}
+                        {description || "Débloquez davantage de projets, de widgets et d'analyses IA."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -31,26 +31,26 @@ export function UpgradeModal({ isOpen, onClose, title, description }: UpgradeMod
                     <div className="p-6 rounded-xl border border-pg-primary/30 bg-pg-primary/5 flex flex-col">
                         <div className="flex items-center gap-2 mb-2 text-pg-primary">
                             <Zap className="w-5 h-5 flex-shrink-0" />
-                            <h3 className="font-bold text-lg">Pro Plan</h3>
+                            <h3 className="font-bold text-lg">Offre Pro</h3>
                         </div>
-                        <div className="text-2xl font-bold mb-4">$19 <span className="text-sm font-normal text-pg-muted">/ month</span></div>
+                        <div className="text-2xl font-bold mb-4">19 $ <span className="text-sm font-normal text-pg-muted">/ mois</span></div>
 
                         <ul className="space-y-2 mb-6 flex-grow text-sm">
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>Up to {TIER_LIMITS.pro.projects} projects</span>
+                                <span>Jusqu'à {TIER_LIMITS.pro.projects} projets</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>{TIER_LIMITS.pro.widgetsPerProject} widgets per project</span>
+                                <span>{TIER_LIMITS.pro.widgetsPerProject} widgets par projet</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>{TIER_LIMITS.pro.aiAnalysesPerDay} AI analyses / day</span>
+                                <span>{TIER_LIMITS.pro.aiAnalysesPerDay} analyses IA / jour</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>30s refresh interval</span>
+                                <span>Intervalle d'actualisation de 30 s</span>
                             </li>
                         </ul>
 
@@ -58,7 +58,7 @@ export function UpgradeModal({ isOpen, onClose, title, description }: UpgradeMod
                             className="w-full bg-pg-primary hover:bg-pg-primary/90"
                             disabled={tier === 'pro' || tier === 'business'}
                         >
-                            {tier === 'pro' ? 'Current Plan' : 'Coming Soon'}
+                            {tier === 'pro' ? 'Offre actuelle' : 'Bientôt disponible'}
                         </Button>
                     </div>
 
@@ -66,26 +66,26 @@ export function UpgradeModal({ isOpen, onClose, title, description }: UpgradeMod
                     <div className="p-6 rounded-xl border border-pg-accent/30 bg-pg-accent/5 flex flex-col">
                         <div className="flex items-center gap-2 mb-2 text-pg-accent">
                             <Shield className="w-5 h-5 flex-shrink-0" />
-                            <h3 className="font-bold text-lg">Business Plan</h3>
+                            <h3 className="font-bold text-lg">Offre Business</h3>
                         </div>
-                        <div className="text-2xl font-bold mb-4">$49 <span className="text-sm font-normal text-pg-muted">/ month</span></div>
+                        <div className="text-2xl font-bold mb-4">49 $ <span className="text-sm font-normal text-pg-muted">/ mois</span></div>
 
                         <ul className="space-y-2 mb-6 flex-grow text-sm">
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>Unlimited projects</span>
+                                <span>Projets illimités</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>Unlimited widgets</span>
+                                <span>Widgets illimités</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>Unlimited AI analyses</span>
+                                <span>Analyses IA illimitées</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <Check className="w-4 h-4 text-pg-accent mt-0.5" />
-                                <span>1s refresh interval</span>
+                                <span>Intervalle d'actualisation de 1 s</span>
                             </li>
                         </ul>
 
@@ -93,7 +93,7 @@ export function UpgradeModal({ isOpen, onClose, title, description }: UpgradeMod
                             className="w-full bg-pg-accent hover:bg-pg-accent/90 text-pg-bg font-bold"
                             disabled={tier === 'business'}
                         >
-                            {tier === 'business' ? 'Current Plan' : 'Coming Soon'}
+                            {tier === 'business' ? 'Offre actuelle' : 'Bientôt disponible'}
                         </Button>
                     </div>
                 </div>

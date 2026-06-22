@@ -9,15 +9,15 @@ interface Message {
 }
 
 const PRESET_QUESTIONS = [
-    { text: "How does it work?", icon: <Zap size={14} /> },
-    { text: "Pricing for scale?", icon: <Briefcase size={14} /> },
-    { text: "Live demo?", icon: <HelpCircle size={14} /> },
+    { text: "Comment ça marche ?", icon: <Zap size={14} /> },
+    { text: "Quels tarifs à grande échelle ?", icon: <Briefcase size={14} /> },
+    { text: "Voir une démo ?", icon: <HelpCircle size={14} /> },
 ];
 
 const SalesChatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { role: "assistant", content: "Hi! I'm PulseGrid's AI Assistant. How can I help you scaling your business today?" },
+        { role: "assistant", content: "Bonjour ! Je suis l'assistant IA de PulseGrid. Comment puis-je vous aider à développer votre activité aujourd'hui ?" },
     ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ const SalesChatbot = () => {
             setMessages([...newMsgs, { role: "assistant", content: resp.content }]);
         } catch (err) {
             console.error("Sales Chat error:", err);
-            setMessages([...newMsgs, { role: "assistant", content: "Sorry, I'm having a bit of trouble connecting. Try again in a second?" }]);
+            setMessages([...newMsgs, { role: "assistant", content: "Désolé, j'ai un petit souci de connexion. Pouvez-vous réessayer dans un instant ?" }]);
         } finally {
             setLoading(false);
         }
@@ -65,8 +65,8 @@ const SalesChatbot = () => {
                                 <Sparkles size={16} />
                             </div>
                             <div>
-                                <p className="text-sm font-bold leading-none">PulseGrid Sales AI</p>
-                                <p className="text-[10px] text-muted-foreground mt-1">Online • Ready to help</p>
+                                <p className="text-sm font-bold leading-none">IA commerciale PulseGrid</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">En ligne • Prêt à vous aider</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-1">
@@ -134,7 +134,7 @@ const SalesChatbot = () => {
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask us anything..."
+                                placeholder="Posez-nous votre question…"
                                 className="flex-1 bg-muted/30 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
                             />
                             <button
@@ -146,7 +146,7 @@ const SalesChatbot = () => {
                             </button>
                         </form>
                         <p className="text-[10px] text-center text-muted-foreground mt-3">
-                            Powered by PulseGrid Vision AI
+                            Propulsé par PulseGrid Vision AI
                         </p>
                     </div>
                 </div>

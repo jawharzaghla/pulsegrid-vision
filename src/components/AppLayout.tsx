@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/sheet";
 
 const navItems = [
-  { icon: FolderOpen, label: "Projects", path: "/app/projects" },
-  { icon: Settings, label: "Settings", path: "/app/settings" },
-  { icon: HelpCircle, label: "Help", path: "#" },
+  { icon: FolderOpen, label: "Projets", path: "/app/projects" },
+  { icon: Settings, label: "Paramètres", path: "/app/settings" },
+  { icon: HelpCircle, label: "Aide", path: "#" },
 ];
 
 const AppLayout = () => {
@@ -23,7 +23,7 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const { firebaseUser, profile, handleSignOut } = useAuth();
 
-  const displayName = profile?.name || firebaseUser?.displayName || "User";
+  const displayName = profile?.name || firebaseUser?.displayName || "Utilisateur";
   const displayEmail = firebaseUser?.email || "";
   const initials = displayName
     .split(" ")
@@ -79,7 +79,7 @@ const AppLayout = () => {
         </div>
       )}
       {showAll && (
-        <button onClick={onLogout} title="Sign out">
+        <button onClick={onLogout} title="Se déconnecter">
           <LogOut size={16} className="text-muted-foreground hover:text-foreground cursor-pointer shrink-0 transition-colors" />
         </button>
       )}

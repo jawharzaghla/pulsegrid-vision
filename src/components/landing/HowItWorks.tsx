@@ -1,7 +1,7 @@
 const steps = [
-  { num: 1, title: "Create a Project", desc: "Name it, pick a color, choose an emoji. Done in seconds." },
-  { num: 2, title: "Add a Widget", desc: "Paste your API endpoint, map the JSON, pick a chart type." },
-  { num: 3, title: "Get Insights", desc: "AI analyzes your data and delivers briefs, anomalies, and trends." },
+  { num: 1, title: "Créez un projet", desc: "Un nom, une couleur, un emoji. C'est réglé en quelques secondes." },
+  { num: 2, title: "Ajoutez un widget", desc: "Collez l'URL de votre API, associez le JSON, choisissez un type de graphique." },
+  { num: 3, title: "Recevez vos analyses", desc: "L'IA passe vos données au crible et vous livre synthèses, anomalies et tendances." },
 ];
 
 const HowItWorks = () => {
@@ -9,8 +9,8 @@ const HowItWorks = () => {
     <section className="py-24 relative">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <p className="text-micro text-accent mb-3">HOW IT WORKS</p>
-          <h2 className="text-3xl md:text-4xl font-bold">Three steps to clarity</h2>
+          <p className="text-micro text-accent mb-3">COMMENT ÇA MARCHE</p>
+          <h2 className="text-3xl md:text-4xl font-bold">Trois étapes, et tout devient clair</h2>
         </div>
 
         <div className="flex flex-col md:flex-row items-start justify-center gap-8 max-w-4xl mx-auto">

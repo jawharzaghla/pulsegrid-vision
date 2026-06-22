@@ -37,11 +37,11 @@ const WidgetActions = ({ onEdit, onDelete }: WidgetActionProps) => (
     <DropdownMenuContent align="end" className="w-40 glass border-border shadow-xl">
       <DropdownMenuItem onClick={onEdit} className="gap-2 cursor-pointer">
         <Edit3 size={14} />
-        <span>Edit Widget</span>
+        <span>Modifier le widget</span>
       </DropdownMenuItem>
       <DropdownMenuItem onClick={onDelete} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
         <Trash2 size={14} />
-        <span>Delete Widget</span>
+        <span>Supprimer le widget</span>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
@@ -65,7 +65,7 @@ const KPICard = memo(forwardRef<HTMLDivElement, KPICardProps & React.HTMLAttribu
       </div>
       <div className="flex-1 flex flex-col justify-center">
         <p className="text-3xl font-bold mb-2">{value}</p>
-        <span className={`text-xs font-medium ${positive ? 'text-success' : 'text-destructive'}`}>{change} vs last 24h</span>
+        <span className={`text-xs font-medium ${positive ? 'text-success' : 'text-destructive'}`}>{change} sur 24 h</span>
       </div>
     </div>
   )
@@ -89,7 +89,7 @@ const WidgetErrorCard = memo(forwardRef<HTMLDivElement, { error: WidgetError; on
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <AlertTriangle size={16} className="text-destructive" />
-          <p className="text-sm font-medium text-destructive">Widget Error</p>
+          <p className="text-sm font-medium text-destructive">Erreur du widget</p>
         </div>
         <WidgetActions onEdit={onEdit} onDelete={onDelete} />
       </div>
@@ -184,7 +184,7 @@ const DemoFree = () => {
   };
 
   const handleDeleteWidget = (widgetId: string) => {
-    if (!window.confirm("Are you sure you want to delete this widget?")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer ce widget ?")) return;
     setLocalProject(prev => ({
       ...prev,
       widgets: prev.widgets.filter(w => w.id !== widgetId),
@@ -224,12 +224,12 @@ const DemoFree = () => {
         pdf.rect(0, 0, A4_W, MARGIN + HEADER_H, 'F');
         pdf.text(`${localProject.emoji} ${localProject.name}`, MARGIN, MARGIN + 10);
         pdf.setFontSize(9); pdf.setTextColor(150, 150, 150);
-        pdf.text('PulseGrid Vision — Dashboard Report', A4_W - MARGIN, MARGIN + 10, { align: 'right' });
+        pdf.text('PulseGrid Vision — Rapport du tableau de bord', A4_W - MARGIN, MARGIN + 10, { align: 'right' });
         pdf.setDrawColor(60, 60, 70); pdf.setLineWidth(0.3);
         pdf.line(MARGIN, MARGIN + HEADER_H, A4_W - MARGIN, MARGIN + HEADER_H);
         pdf.setFontSize(8); pdf.setTextColor(120, 120, 120);
-        const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        pdf.text(`Generated on ${now}`, MARGIN, A4_H - MARGIN + 4);
+        const now = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+        pdf.text(`Généré le ${now}`, MARGIN, A4_H - MARGIN + 4);
         pdf.text(`Page ${pageNum} / ${totalPages}`, A4_W - MARGIN, A4_H - MARGIN + 4, { align: 'right' });
       };
 
@@ -252,7 +252,7 @@ const DemoFree = () => {
         const sliceHeightMM = sliceHeightPx * scale;
         pdf.addImage(sliceImgData, 'PNG', MARGIN, yStartMM, CONTENT_W, sliceHeightMM);
       }
-      pdf.save(`PulseGrid_${localProject.name.replace(/\s+/g, '_')}_Report.pdf`);
+      pdf.save(`PulseGrid_${localProject.name.replace(/\s+/g, '_')}_Rapport.pdf`);
     } catch (err) {
       console.error("Failed to export PDF", err);
     } finally { setIsExporting(false); }
@@ -260,7 +260,7 @@ const DemoFree = () => {
 
   const timeAgo = () => {
     const diff = Math.floor((Date.now() - lastRefreshed.getTime()) / 60000);
-    return diff < 1 ? 'just now' : `${diff} min ago`;
+    return diff < 1 ? "à l'instant" : `il y a ${diff} min`;
   };
 
   if (loading) {
@@ -278,17 +278,17 @@ const DemoFree = () => {
           <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft size={20} /></Link>
           <span className="text-xl">{localProject.emoji}</span>
           <h1 className="text-xl font-bold">{localProject.name}</h1>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-muted/50 text-muted-foreground rounded-full border border-border">Free Plan</span>
+          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-muted/50 text-muted-foreground rounded-full border border-border">Offre gratuite</span>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
-            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /><span>Updated {timeAgo()}</span>
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /><span>Actualisé {timeAgo()}</span>
           </button>
           <button onClick={exportToPDF} disabled={isExporting || !hasWidgets} className="px-3 py-1.5 border border-border hover:border-primary/50 rounded-lg text-body text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 disabled:opacity-50">
-            {isExporting ? <RefreshCw size={14} className="animate-spin" /> : <FileDown size={14} />} {isExporting ? "Exporting..." : "Export PDF"}
+            {isExporting ? <RefreshCw size={14} className="animate-spin" /> : <FileDown size={14} />} {isExporting ? "Exportation..." : "Exporter en PDF"}
           </button>
           <button onClick={() => setShowAI(true)} disabled={!hasWidgets} className="px-3 py-1.5 bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent rounded-lg text-body font-medium transition-all flex items-center gap-2 disabled:opacity-50">
-            <Sparkles size={14} /> AI Brief
+            <Sparkles size={14} /> Synthèse IA
           </button>
           <div className="w-px h-6 bg-border mx-1" />
           <button onClick={() => setShowGridLines(!showGridLines)} className={`p-2 rounded-lg transition-colors border ${showGridLines ? 'bg-muted border-primary/50 text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
@@ -302,12 +302,12 @@ const DemoFree = () => {
           <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
             <Plus size={32} className="text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold mb-3">No widgets yet</h2>
+          <h2 className="text-2xl font-bold mb-3">Aucun widget pour le moment</h2>
           <p className="text-muted-foreground text-body max-w-sm mb-8">
-            Connect your favorite APIs and start visualizing your data. Your dashboard is ready for your first widget.
+            Connectez vos API favorites et commencez à visualiser vos données. Votre tableau de bord est prêt pour votre premier widget.
           </p>
           <button onClick={() => setShowDrawer(true)} className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-95">
-            <Plus size={18} /> Add Your First Widget
+            <Plus size={18} /> Ajouter votre premier widget
           </button>
         </div>
       ) : (
